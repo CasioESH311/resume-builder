@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>履歷組合器</title>
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+<style>
+:root{--pri:#0f766e;--pri2:#14b8a6;--pri-l:#ccfbf1;--bg:#f1f5f9;--card:#fff;--bd:#e2e8f0;--tx:#0f172a;--mut:#64748b;--danger:#dc2626;--warn:#f59e0b;--r:10px;--sh:0 1px 3px rgba(15,23,42,.08),0 1px 2px rgba(15,23,42,.04)}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei","Noto Sans CJK TC",system-ui,sans-serif;background:var(--bg);color:var(--tx);font-size:14px;line-height:1.55}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+.topbar{position:sticky;top:0;z-index:50;display:flex;align-items:center;gap:12px;padding:10px 18px;background:#0f172a;color:#fff;flex-wrap:wrap}
+.brand{font-weight:700;font-size:17px;letter-spacing:.5px;display:flex;align-items:center;gap:8px}
+.brand small{font-weight:400;color:#94a3b8;font-size:12px}
+.tabs{display:flex;background:#1e293b;border-radius:8px;padding:3px}
+.tabs button{border:0;background:transparent;color:#cbd5e1;padding:6px 16px;border-radius:6px;font-weight:600}
+.tabs button.on{background:var(--pri2);color:#042f2e}
+.spacer{flex:1}
+.saved{font-size:12px;color:#94a3b8;display:flex;align-items:center;gap:6px;white-space:nowrap}
+.saved .dot{width:8px;height:8px;border-radius:50%;background:#22c55e}
+.saved.busy .dot{background:var(--warn)}
+.saved.err .dot{background:var(--danger)}
+.tb-btn{border:1px solid #334155;background:#1e293b;color:#e2e8f0;padding:6px 12px;border-radius:7px;font-size:13px}
+.tb-btn:hover{background:#334155}
+.tb-btn.danger:hover{background:#7f1d1d;border-color:#991b1b}
+#app{padding:16px 18px 40px}
+.btn{border:1px solid var(--bd);background:#fff;padding:6px 12px;border-radius:7px;font-size:13px;display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
+.btn:hover{border-color:var(--pri2);color:var(--pri)}
+.btn.pri{background:var(--pri);border-color:var(--pri);color:#fff}
+.btn.pri:hover{background:#115e59;color:#fff}
+.btn.sm{padding:3px 8px;font-size:12px}
+.btn.danger{color:var(--danger)}
+.btn.danger:hover{border-color:var(--danger);background:#fef2f2}
+.btn.ghost{border-color:transparent;background:transparent}
+.btn:disabled{opacity:.4;cursor:default}
+.ibtn{border:0;background:transparent;width:26px;height:26px;border-radius:6px;color:var(--mut);display:inline-flex;align-items:center;justify-content:center;font-size:13px}
+.ibtn:hover{background:#e2e8f0;color:var(--tx)}
+.ibtn.del:hover{background:#fee2e2;color:var(--danger)}
+.ibtn:disabled{opacity:.3;cursor:default;background:transparent}
+input[type=text],input[type=search],textarea,select{border:1px solid var(--bd);border-radius:7px;padding:7px 10px;background:#fff;width:100%}
+input:focus,textarea:focus,select:focus{outline:2px solid var(--pri2);outline-offset:-1px;border-color:transparent}
+textarea{resize:vertical;min-height:80px;line-height:1.6}
+label.f{display:block;font-size:12px;color:var(--mut);margin:10px 0 4px;font-weight:600}
+.hint{font-size:12px;color:var(--mut)}
+.chip{display:inline-flex;align-items:center;gap:3px;font-size:11.5px;padding:1px 8px;border-radius:999px;background:#f1f5f9;color:#475569;border:1px solid var(--bd);white-space:nowrap}
+.chip.on{background:var(--pri);color:#fff;border-color:var(--pri)}
+button.chip{cursor:pointer}
+.badge{font-size:11px;padding:1px 7px;border-radius:5px;font-weight:600;white-space:nowrap}
+.t-autobio{background:#e0e7ff;color:#3730a3}.t-achievement{background:#dcfce7;color:#166534}.t-project{background:#fef3c7;color:#92400e}
+.t-jobItem{background:#f1f5f9;color:#334155}.t-job{background:#cffafe;color:#155e75}.t-skill{background:#fce7f3;color:#9d174d}
+.t-cert{background:#ede9fe;color:#5b21b6}.t-language{background:#ffedd5;color:#9a3412}.t-education{background:#e0f2fe;color:#075985}
+.t-condition{background:#f5f5f4;color:#44403c}.t-summary{background:#ccfbf1;color:#115e59}
+/* library */
+.lib{display:grid;grid-template-columns:220px 1fr;gap:16px;align-items:start}
+.side{background:#fff;border:1px solid var(--bd);border-radius:var(--r);padding:8px;position:sticky;top:70px}
+.side button{display:flex;width:100%;justify-content:space-between;align-items:center;border:0;background:transparent;padding:8px 10px;border-radius:7px;text-align:left}
+.side button:hover{background:#f1f5f9}
+.side button.on{background:var(--pri-l);color:#134e4a;font-weight:700}
+.side .cnt{font-size:11px;color:var(--mut);background:#f1f5f9;border-radius:999px;padding:0 7px}
+.side hr{border:0;border-top:1px solid var(--bd);margin:6px 4px}
+.toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:#fff;border:1px solid var(--bd);border-radius:var(--r);padding:10px 12px;margin-bottom:12px}
+.toolbar input[type=search]{max-width:280px}
+.toolbar .tagrow{display:flex;gap:5px;flex-wrap:wrap;flex-basis:100%}
+.toolbar h2{margin:0;font-size:16px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:var(--r);padding:12px 14px;box-shadow:var(--sh);display:flex;flex-direction:column;gap:6px}
+.card:hover{border-color:#99f6e4}
+.card .ch{display:flex;gap:6px;align-items:flex-start}
+.card .ct{font-weight:700;flex:1;word-break:break-all}
+.card .cc{color:#334155;white-space:pre-wrap;display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical;overflow:hidden;font-size:13px}
+.card .cm{font-size:12px;color:var(--mut)}
+.card .cf{display:flex;gap:4px;flex-wrap:wrap;align-items:center;margin-top:auto;padding-top:4px}
+.card .acts{display:flex;gap:2px;margin-left:auto}
+.used{font-size:11px;color:var(--pri);font-weight:600}
+.ph{background:#fef9c3;border-radius:3px;padding:0 2px;color:#854d0e}
+.jobblk{background:#fff;border:1px solid var(--bd);border-radius:var(--r);margin-bottom:14px;box-shadow:var(--sh);overflow:hidden}
+.jobhd{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;background:#f8fafc;border-bottom:1px solid var(--bd)}
+.jobhd .jt{font-weight:700;font-size:15px}
+.items{padding:6px 10px 10px}
+.item{display:flex;gap:8px;align-items:flex-start;padding:6px 6px;border-radius:7px}
+.item:hover{background:#f8fafc}
+.item .ix{flex:1;font-size:13px}
+.item .grp{font-size:11px;color:var(--pri);font-weight:700}
+.empty{padding:30px;text-align:center;color:var(--mut);background:#fff;border:1px dashed var(--bd);border-radius:var(--r)}
+.pform{background:#fff;border:1px solid var(--bd);border-radius:var(--r);padding:14px 16px;margin-bottom:12px}
+.pform h3{margin:0 0 6px;font-size:15px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:0 14px}
+.frow{display:grid;grid-template-columns:150px 1fr auto;gap:6px;align-items:center;margin-bottom:6px}
+/* composer */
+.comp{display:grid;grid-template-columns:210px minmax(380px,1fr) minmax(420px,1.1fr);gap:14px;align-items:start}
+.panel{background:#fff;border:1px solid var(--bd);border-radius:var(--r);box-shadow:var(--sh)}
+.panel>.ph2{padding:10px 12px;border-bottom:1px solid var(--bd);font-weight:700;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.vlist{padding:6px}
+.vitem{display:block;width:100%;text-align:left;border:1px solid transparent;background:transparent;border-radius:8px;padding:8px 10px;margin-bottom:4px}
+.vitem:hover{background:#f1f5f9}
+.vitem.on{background:var(--pri-l);border-color:#5eead4}
+.vitem b{display:block;font-size:13.5px}
+.vitem span{font-size:11.5px;color:var(--mut)}
+.vacts{display:flex;flex-wrap:wrap;gap:5px;padding:8px 10px;border-top:1px solid var(--bd)}
+.stabs{display:flex;flex-wrap:wrap;gap:4px;padding:8px 10px;border-bottom:1px solid var(--bd);background:#f8fafc;border-radius:var(--r) var(--r) 0 0}
+.stabs button{border:1px solid transparent;background:transparent;padding:4px 10px;border-radius:7px;font-size:13px;color:#475569}
+.stabs button:hover{background:#e2e8f0}
+.stabs button.on{background:#fff;border-color:var(--bd);color:var(--pri);font-weight:700;box-shadow:var(--sh)}
+.stabs .n{font-size:10.5px;color:var(--mut);margin-left:2px}
+.sbody{padding:12px 14px}
+.sbody h4{margin:14px 0 6px;font-size:13px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.sbody h4:first-child{margin-top:0}
+.sel{list-style:none;margin:0;padding:0;min-height:36px;border:1px dashed #cbd5e1;border-radius:8px;padding:4px}
+.sel li{display:flex;align-items:center;gap:6px;background:#fff;border:1px solid var(--bd);border-radius:7px;padding:5px 6px;margin:3px 0}
+.sel li.sub{margin-left:22px;border-left:3px solid #86efac}
+.sel li .lx{flex:1;font-size:13px;min-width:0;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.sel li .gl{font-size:11px;color:var(--pri);font-weight:700;margin-right:4px}
+.drag{cursor:grab;color:#94a3b8;padding:0 3px;user-select:none;font-size:15px;line-height:1}
+.ghost{opacity:.4;background:var(--pri-l)!important}
+.sel .none{color:var(--mut);font-size:12px;padding:8px;text-align:center}
+.pick{max-height:420px;overflow:auto;border:1px solid var(--bd);border-radius:8px}
+.pick .pi{display:flex;gap:8px;align-items:flex-start;padding:7px 9px;border-bottom:1px solid #f1f5f9;cursor:pointer}
+.pick .pi:hover{background:#f0fdfa}
+.pick .pi .lx{flex:1;font-size:13px}
+.pick .pi .lx small{display:block;color:var(--mut);font-size:12px;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.pick .pg{padding:5px 9px;background:#f8fafc;font-size:12px;font-weight:700;color:var(--mut);position:sticky;top:0}
+.addbtn{flex:none;width:24px;height:24px;border-radius:6px;border:1px solid #99f6e4;background:#f0fdfa;color:var(--pri);font-weight:700;display:flex;align-items:center;justify-content:center}
+.pfilter{display:flex;gap:6px;margin-bottom:6px}
+.pfilter select{max-width:150px}
+.jsel{list-style:none;margin:0;padding:0}
+.jsel>li{border:1px solid var(--bd);border-radius:8px;margin:6px 0;background:#fff}
+.jrow{display:flex;align-items:center;gap:6px;padding:7px 8px}
+.jrow .lx{flex:1;font-size:13px}
+.jin{padding:4px 10px 10px 30px;border-top:1px dashed var(--bd);background:#fafafa;border-radius:0 0 8px 8px}
+.chk{display:flex;align-items:center;gap:8px;padding:5px 4px;border-bottom:1px solid #f1f5f9;font-size:13px}
+.chk input{width:16px;height:16px;accent-color:var(--pri)}
+/* preview */
+.pvbar{display:flex;gap:6px;align-items:center;flex-wrap:wrap;padding:8px 10px;border-bottom:1px solid var(--bd)}
+.seg{display:inline-flex;border:1px solid var(--bd);border-radius:7px;overflow:hidden}
+.seg button{border:0;background:#fff;padding:5px 11px;font-size:13px;border-right:1px solid var(--bd)}
+.seg button:last-child{border-right:0}
+.seg button.on{background:var(--pri);color:#fff}
+.copyrow{display:flex;flex-wrap:wrap;gap:4px;padding:6px 10px;border-bottom:1px solid var(--bd);background:#f8fafc;align-items:center}
+.pvwrap{background:#e2e8f0;padding:14px;max-height:calc(100vh - 210px);overflow:auto;border-radius:0 0 var(--r) var(--r)}
+.paper{background:#fff;margin:0 auto;max-width:210mm;padding:28px 32px;box-shadow:0 4px 18px rgba(0,0,0,.12)}
+pre.txt{white-space:pre-wrap;font-family:inherit;font-size:13px;margin:0;line-height:1.7}
+.stick{position:sticky;top:70px}
+/* resume */
+.resume{font-size:10.5pt;line-height:1.6;color:#111}
+.resume .r-head{border-bottom:2.5px solid var(--pri);padding-bottom:10px;margin-bottom:6px}
+.resume .r-name{font-size:22pt;font-weight:800;letter-spacing:2px;line-height:1.2}
+.resume .r-name span{font-size:12pt;font-weight:500;color:#475569;letter-spacing:0;margin-left:8px}
+.resume .r-line{color:#334155;font-size:10pt}
+.resume .r-line.main{font-weight:700;color:var(--pri);font-size:11pt;margin-top:3px}
+.resume .r-sum{margin-top:8px;background:#f0fdfa;border-left:3px solid var(--pri2);padding:6px 10px;font-size:10pt}
+.resume .r-sec{margin-top:12px}
+.resume .r-sec>h2{font-size:12pt;margin:0 0 6px;padding:2px 0 3px;border-bottom:1px solid #cbd5e1;color:var(--pri);display:flex;align-items:center;gap:6px;break-after:avoid;page-break-after:avoid}
+.resume .r-sec>h2 small{font-size:9.5pt;color:#64748b;font-weight:500}
+.resume .r-kv{display:grid;grid-template-columns:1fr 1fr;gap:1px 18px}
+.resume .r-kv div{display:flex;gap:8px;break-inside:avoid}
+.resume .r-kv b{flex:none;width:5.5em;color:#475569;font-weight:600}
+.resume .r-kv.one{grid-template-columns:1fr}
+.resume .r-kv.one div{break-inside:auto}
+.resume .pre{white-space:pre-wrap}
+.resume .r-edu{display:grid;grid-template-columns:1fr auto;gap:0 10px;margin-bottom:4px;break-inside:avoid}
+.resume .r-date{color:#475569;font-size:9.5pt;white-space:nowrap;text-align:right}
+.resume .r-job{margin-bottom:10px}
+.resume .r-job-h{display:flex;gap:10px;align-items:baseline;break-after:avoid;page-break-after:avoid}
+.resume .r-job-h .jt{font-weight:800;font-size:11pt}
+.resume .r-job-h .jc{flex:1}
+.resume .r-job-m{font-size:9.5pt;color:#475569;break-after:avoid;page-break-after:avoid}
+.resume h4{margin:5px 0 1px;font-size:10pt;color:#0f172a;break-after:avoid;page-break-after:avoid}
+.resume h4::before{content:"▍";color:var(--pri2)}
+.resume ul,.resume ol{margin:2px 0 4px;padding-left:1.4em}
+.resume li{margin:1px 0;break-inside:avoid}
+.resume .r-sk{margin-bottom:4px}
+.resume .r-sk b{display:block;font-size:10pt}
+.resume .r-auto p{margin:0 0 7px;text-align:justify}
+.resume .r-auto ol,.resume .r-auto ul{margin:-3px 0 8px}
+.resume .r-proj{margin-bottom:5px;break-inside:avoid}
+.resume .cpy{margin-left:auto;font-size:10px;border:1px solid var(--bd);background:#fff;border-radius:5px;padding:1px 7px;color:#475569;font-weight:500}
+.resume .cpy:hover{color:var(--pri);border-color:var(--pri2)}
+/* modal & toast */
+.mask{position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:100;display:flex;align-items:flex-start;justify-content:center;padding:5vh 12px;overflow:auto}
+.dlg{background:#fff;border-radius:12px;width:min(720px,100%);box-shadow:0 20px 50px rgba(0,0,0,.25)}
+.dlg .dh{padding:14px 18px;border-bottom:1px solid var(--bd);display:flex;align-items:center;gap:8px}
+.dlg .dh h3{margin:0;font-size:16px;flex:1}
+.dlg .db{padding:6px 18px 16px}
+.dlg .df{padding:12px 18px;border-top:1px solid var(--bd);display:flex;gap:8px;justify-content:flex-end;background:#f8fafc;border-radius:0 0 12px 12px}
+#toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);z-index:200;display:flex;flex-direction:column;gap:6px;align-items:center;pointer-events:none}
+#toast div{background:#0f172a;color:#fff;padding:9px 16px;border-radius:8px;font-size:13px;box-shadow:0 6px 20px rgba(0,0,0,.25);animation:tin .2s}
+@keyframes tin{from{opacity:0;transform:translateY(8px)}}
+#printRoot{display:none}
+@media (max-width:1250px){.comp{grid-template-columns:1fr 1fr}.comp .vpanel{grid-column:1/-1}.vlist{display:flex;flex-wrap:wrap;gap:4px}.vitem{width:auto;margin:0}.stick{position:static}}
+@media (max-width:860px){.comp{grid-template-columns:1fr}.lib{grid-template-columns:1fr}.side{position:static;display:flex;flex-wrap:wrap}.side button{width:auto}.side hr{display:none}.two{grid-template-columns:1fr}.frow{grid-template-columns:1fr auto}.frow input:first-child{grid-column:1/-1}}
+@page{size:A4;margin:13mm 14mm 14mm}
+@media print{
+  body{background:#fff}
+  body>*:not(#printRoot){display:none!important}
+  #printRoot{display:block!important}
+  .no-print,.cpy{display:none!important}
+  .resume{font-size:10pt}
+  .resume .r-sum{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  a{color:inherit;text-decoration:none}
+}
+#notice{flex-basis:100%;margin:2px 0 0;padding:12px 16px;border-radius:10px;background:#fff8e1;border:1px solid #f0c36d;color:#5d4300;display:flex;gap:12px;align-items:center;flex-wrap:wrap;font-size:14px}
+#notice[hidden]{display:none}#notice b{color:#3d2c00}#notice .nbtns{margin-left:auto;display:flex;gap:8px}
+#notice button{border:1px solid #c9a227;background:#fff;border-radius:8px;padding:6px 12px;cursor:pointer;font:inherit}#notice button.pri{background:#1f7a5c;color:#fff;border-color:#1f7a5c}
+@media print{#notice{display:none!important}}
+.card .cc.pp{-webkit-line-clamp:8}.card .cc.pp.warn{color:#c2410c;background:#fff7ed;border:1px dashed #fdba74;border-radius:8px;padding:6px 8px}
+.sel li.warnp{background:#fff7ed;border-color:#fdba74}.sel li.warnp .lx::after{content:'⚠ 此段落沒有內文，後面也沒接成果／專案，輸出時會略過';display:block;color:#c2410c;font-size:12px}
+.tb-btn.sync{display:flex;align-items:center;gap:6px}.tb-btn.sync .dot{width:8px;height:8px;border-radius:50%;background:#64748b}
+.tb-btn.sync.ok .dot{background:#22c55e}.tb-btn.sync.busy .dot{background:#f59e0b}.tb-btn.sync.off .dot{background:#94a3b8;outline:2px dashed #f59e0b;outline-offset:1px}.tb-btn.sync.err .dot,.tb-btn.sync.conflict .dot{background:#ef4444}
+.tb-btn.sync.conflict{border-color:#ef4444;background:#450a0a}
+#syncBar{flex-basis:100%;margin:2px 0 0;padding:10px 14px;border-radius:10px;background:#e0f2fe;border:1px solid #7dd3fc;color:#0c4a6e;display:flex;gap:12px;align-items:center;flex-wrap:wrap;font-size:14px}
+#syncBar[hidden]{display:none}#syncBar .nbtns{margin-left:auto;display:flex;gap:8px}
+#syncBar button{border:1px solid #38bdf8;background:#fff;border-radius:8px;padding:6px 12px;cursor:pointer;font:inherit}#syncBar button.pri{background:#0369a1;color:#fff;border-color:#0369a1}
+dialog{border:0;border-radius:14px;padding:0;max-width:560px;width:calc(100% - 32px);box-shadow:0 20px 60px rgba(0,0,0,.35)}
+dialog::backdrop{background:rgba(15,23,42,.55)}
+.dlg{padding:20px 22px}.dlg h3{margin:0 0 6px;font-size:18px}.dlg .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.dlg label{display:block;font-size:12px;color:#475569;margin:10px 0 4px}.dlg input{width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid #cbd5e1;border-radius:8px;font:inherit}
+.dlg .acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;justify-content:flex-end}.dlg .acts .l{margin-right:auto}
+.dlg button{border:1px solid #cbd5e1;background:#fff;border-radius:8px;padding:8px 14px;cursor:pointer;font:inherit}.dlg button.pri{background:#0f766e;color:#fff;border-color:#0f766e}.dlg button.danger{color:#b91c1c;border-color:#fca5a5}
+.dlg .st{background:#f1f5f9;border-radius:8px;padding:8px 10px;font-size:13px;margin-top:10px;word-break:break-all}.dlg .st.err{background:#fef2f2;color:#991b1b}.dlg .st.ok{background:#f0fdf4;color:#166534}
+.dlg .hint{font-size:12px;color:#64748b}.dlg .cbox{border:1px solid #e2e8f0;border-radius:10px;padding:10px 12px;margin-top:8px;font-size:13px}
+@media print{#syncBar,dialog{display:none!important}}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">📄 履歷組合器 <small id="brandName"></small></div>
+  <div class="tabs" id="viewTabs">
+    <button data-act="view" data-v="library">🗂 素材庫</button>
+    <button data-act="view" data-v="composer">🧩 組合器</button>
+  </div>
+  <div class="spacer"></div>
+  <div class="saved" id="saved"><span class="dot"></span><span id="savedTxt">已載入</span></div>
+  <button class="tb-btn sync" id="syncPill" data-act="syncOpen" title="雲端同步設定與狀態"><span class="dot"></span><span id="syncTxt">本機模式</span></button>
+  <button class="tb-btn" data-act="export" title="下載 JSON 備份檔">⬇ 匯出備份</button>
+  <button class="tb-btn" data-act="import" title="從 JSON 備份檔還原">⬆ 匯入備份</button>
+  <button class="tb-btn danger" data-act="reset" title="清除所有修改，回到初始履歷資料">↺ 重設為初始資料</button>
+<div id="notice" hidden></div>
+<div id="syncBar" hidden></div>
+</header>
+<main id="app"></main>
+<div id="printRoot"></div>
+<div id="modal"></div>
+<div id="toast"></div>
+<dialog id="syncDlg"></dialog>
+<dialog id="conflictDlg"></dialog>
+<input type="file" id="importFile" accept=".json,application/json" hidden>
+<script>
+/* ================= 公開版：不內嵌任何個人資料 =================
+   資料來源：⚙ 同步設定（GitHub 私有 repo 的 resume.json）或「匯入備份」。 */
+const STORE_KEY='resume-composer-v1';
+const SEED_HAS_DATA=false;
+function buildSeed(){
+  const labels=['個人資料','就業狀態','主要手機','E-mail','通訊地址','英文姓名','聯絡電話','聯絡方式','駕駛執照','交通工具'];
+  const profile={name:'',englishName:'',headline:'',eduLine:'',tagline:'{{年資}}年工作經歷 | 希望職稱：{{目標職稱}}',careerStart:'',
+    fields:labels.map((l,i)=>({id:'f'+(i+1),label:l,value:''}))};
+  const layout=['header','profile','conditions','education','jobs','languages','skills','certs','projects','autobio'].map(k=>({key:k,visible:true}));
+  const full={id:'v_full',name:'完整版',company:'',targetTitle:'',intro:'',outro:'',note:'',
+    sections:{summary:[],conditions:[],education:[],jobs:[],languages:[],skills:[],certs:[],projects:[],autobio:[]},jobBullets:{},hiddenFields:[],layout};
+  return {schema:1,dataVersion:DATA_VERSION,app:'resume-composer',starter:true,profile,cards:[],versions:[full],defaults:{autobioOrder:[]},currentVersion:'v_full',savedAt:null};
+}
+</script>
+<script>
+/* ================= 應用程式 ================= */
+const DATA_VERSION=3; // 2：證照更新；3：完整版自傳順序檢查
+const TYPES={
+  summary:{label:'職涯摘要',icon:'📝',tl:'摘要名稱（僅供辨識）',cl:'摘要內容'},
+  condition:{label:'求職條件',icon:'🎯',tl:'項目',cl:'內容'},
+  education:{label:'學歷',icon:'🎓',tl:'學校',cl:'備註（選填）',fields:[['dept','科系'],['degree','學歷／狀態','例：碩士畢業'],['start','開始','例：2021/9'],['end','結束','例：2025/10']]},
+  job:{label:'工作經歷',icon:'💼',tl:'職稱',cl:'職務簡介（選填，顯示於條目前）',fields:[['company','公司名稱'],['industry','產業類別'],['size','公司規模','例：500人以上'],['start','到職年月','例：2022/2'],['end','離職年月','空白＝仍在職'],['category','職務類別'],['extra','其他（管理人數／薪資等）'],['location','工作地點']]},
+  jobItem:{label:'工作內容條目',icon:'•',tl:'簡短標題（僅供辨識，選填）',cl:'條目內容',fields:[['group','小標題分組','例：主要成就（相同分組會歸在同一小標題下）']]},
+  autobio:{label:'自傳段落',icon:'📖',tl:'段落標題',cl:'段落內容（可留空，只當作下方成果/專案的標題）',fields:[['listStyle','其後接續的成果/專案顯示方式','',[['number','1. 2. 3. 編號清單'],['bullet','• 項目符號清單'],['none','各自成為段落']]]]},
+  achievement:{label:'現職成果',icon:'🏆',tl:'成果標題',cl:'成果內容'},
+  project:{label:'執行專案',icon:'🚀',tl:'專案名稱',cl:'專案內容'},
+  skill:{label:'技能',icon:'🛠',tl:'技能名稱',cl:'說明（選填）',fields:[['group','分類','例：工作技能']]},
+  cert:{label:'證照／資格',icon:'📜',tl:'證照名稱',cl:'備註（選填）',fields:[['category','類別'],['issuer','發證單位']]},
+  language:{label:'語言',icon:'🌐',tl:'語言',cl:'程度'}
+};
+const LIB_CATS=['profile','autobio','achievement','project','job','summary','condition','education','skill','cert','language','all'];
+const SECS={
+  header:{label:'抬頭與摘要',types:['summary']},
+  profile:{label:'個人資料'},
+  conditions:{label:'求職條件',types:['condition']},
+  education:{label:'學歷',types:['education']},
+  jobs:{label:'工作經歷',types:['job']},
+  languages:{label:'語言能力',types:['language']},
+  skills:{label:'專長技能',types:['skill']},
+  certs:{label:'資格認證',types:['cert']},
+  projects:{label:'專案經驗',types:['project','achievement']},
+  autobio:{label:'自傳',types:['autobio','achievement','project']}
+};
+const LIST_KEY={header:'summary'}; // header 區段的卡片清單存在 sections.summary
+const secListKey=k=>LIST_KEY[k]||k;
+const COMP_TABS=[['info','⚙ 版本設定'],['autobio','自傳'],['jobs','工作經歷'],['projects','專案'],['skills','技能'],['certs','證照'],['header','抬頭摘要'],['profile','個人資料'],['education','學歷'],['languages','語言'],['conditions','求職條件'],['layout','版面順序']];
+
+let state=null;
+const ui={view:'composer',libCat:'autobio',libTag:'',libSearch:'',secTab:'info',pv:'full',pickSearch:'',pickTag:'',openJobs:{},libTarget:null};
+
+/* ---------- utils ---------- */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid=p=>(p||'c')+'_'+Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+const clone=o=>JSON.parse(JSON.stringify(o));
+const card=id=>state.cards.find(c=>c.id===id);
+const curV=()=>state.versions.find(v=>v.id===state.currentVersion)||state.versions[0];
+function parseYM(s){const m=String(s||'').match(/(\d{4})\D+(\d{1,2})/);return m?[+m[1],+m[2]]:null}
+function nowYM(){const d=new Date();return[d.getFullYear(),d.getMonth()+1]}
+function years(){const a=parseYM(state.profile.careerStart);if(!a)return 0;const b=nowYM();return Math.max(0,Math.floor(((b[0]-a[0])*12+(b[1]-a[1]))/12))}
+function duration(s,e){const a=parseYM(s);if(!a)return'';const b=parseYM(e)||nowYM();const m=(b[0]-a[0])*12+(b[1]-a[1])+1;if(m<=0)return'';const y=Math.floor(m/12),r=m%12;return(y?y+'年':'')+(r?r+'個月':'')}
+function fill(t,v){v=v||curV();return String(t??'').replace(/\{\{\s*年資\s*\}\}/g,years()).replace(/\{\{\s*目標職稱\s*\}\}/g,(v&&v.targetTitle)||'').replace(/\{\{\s*公司\s*\}\}/g,(v&&v.company)||'')}
+const html=(t,v)=>esc(fill(t,v)).replace(/\n/g,'<br>');
+const phHL=t=>esc(t).replace(/\{\{[^}]+\}\}/g,m=>`<span class="ph" title="自動代入">${m}</span>`);
+function label(c){if(!c)return'（已刪除）';if(c.type==='job')return`${c.title}｜${c.meta.company||''}`;if(c.type==='education')return`${c.title} ${c.meta.dept||''}`;return c.title||fill(c.content).slice(0,40)}
+function snippet(c,n=90){const s=fill(c.content).replace(/\s+/g,' ');return s.length>n?s.slice(0,n)+'…':s}
+function toast(m){const d=document.createElement('div');d.textContent=m;$('#toast').appendChild(d);setTimeout(()=>d.remove(),2400)}
+function dateRange(m){return`${m.start||''}～${m.end||'仍在職'}`}
+
+/* ---------- 儲存 ---------- */
+let saveT=null;
+function setSaved(cls,txt){const el=$('#saved');el.className='saved '+cls;$('#savedTxt').textContent=txt}
+function touch(){setSaved('busy','儲存中…');clearTimeout(saveT);saveT=setTimeout(saveNow,350)}
+function saveNow(){clearTimeout(saveT);saveT=null;try{state.savedAt=new Date().toISOString();localStorage.setItem(STORE_KEY,JSON.stringify(state));setSaved('','已自動儲存 '+new Date().toLocaleTimeString('zh-TW',{hour12:false}));if(window.SYNC)SYNC.onLocalSave()}catch(e){setSaved('err','儲存失敗！請匯出備份');console.error(e)}}
+window.addEventListener('beforeunload',()=>{if(saveT)saveNow()});
+function normalize(s){
+  s.profile.fields=s.profile.fields||[];
+  if(!s.defaults)s.defaults={autobioOrder:(typeof SEED_HAS_DATA!=='undefined'&&SEED_HAS_DATA)?buildSeed().versions[0].sections.autobio.slice():[]};
+  if(!Array.isArray(s.defaults.autobioOrder))s.defaults.autobioOrder=[];
+  s.cards.forEach(c=>{c.tags=c.tags||[];c.meta=c.meta||{};if(c.showTitle===undefined)c.showTitle=true;c.content=c.content||'';c.title=c.title||''});
+  const ids=new Set(s.cards.map(c=>c.id));
+  s.versions.forEach(v=>{
+    v.sections=v.sections||{};['summary','conditions','education','jobs','languages','skills','certs','projects','autobio'].forEach(k=>{v.sections[k]=(v.sections[k]||[]).filter(id=>ids.has(id))});
+    v.jobBullets=v.jobBullets||{};Object.keys(v.jobBullets).forEach(j=>{if(!ids.has(j))delete v.jobBullets[j];else v.jobBullets[j]=v.jobBullets[j].filter(id=>ids.has(id))});
+    v.hiddenFields=v.hiddenFields||[];v.layout=v.layout||[];
+    Object.keys(SECS).forEach(k=>{if(!v.layout.find(l=>l.key===k))v.layout.push({key:k,visible:true})});
+    v.layout=v.layout.filter(l=>SECS[l.key]);
+    ['name','company','targetTitle','intro','outro','note'].forEach(k=>{if(v[k]==null)v[k]=''});
+  });
+  if(!s.versions.length)s.versions.push(newVersionObj('完整版',s));
+  if(!s.versions.find(v=>v.id===s.currentVersion))s.currentVersion=s.versions[0].id;
+  return s;
+}
+function load(){
+  try{const raw=localStorage.getItem(STORE_KEY);if(raw){const s=JSON.parse(raw);if(validState(s)){state=normalize(s);setSaved('','已載入上次儲存（'+(s.savedAt?new Date(s.savedAt).toLocaleString('zh-TW',{hour12:false}):'')+'）');return}}}catch(e){console.warn(e)}
+  state=normalize(buildSeed());saveNow();setSaved('','已建立初始資料');
+}
+function validState(s){return s&&s.schema===1&&s.profile&&Array.isArray(s.cards)&&Array.isArray(s.versions)}
+
+/* ---------- 版本 ---------- */
+function newVersionObj(name,s){s=s||state;const cards=s.cards;const ofT=t=>cards.filter(c=>c.type===t).map(c=>c.id);const jobs=ofT('job');const jb={};jobs.forEach(j=>jb[j]=[]);
+  return{id:uid('v'),name,company:'',targetTitle:(s.versions&&s.versions[0]&&s.versions[0].targetTitle)||'',intro:'',outro:'',note:'',
+    sections:{summary:ofT('summary').slice(0,1),conditions:ofT('condition'),education:ofT('education'),jobs,languages:ofT('language'),skills:ofT('skill'),certs:ofT('cert'),projects:[],autobio:[]},
+    jobBullets:jb,hiddenFields:[],layout:Object.keys(SECS).map(k=>({key:k,visible:true}))}}
+function usage(id){return state.versions.filter(v=>Object.values(v.sections).some(a=>a.includes(id))||Object.values(v.jobBullets).some(a=>a.includes(id))).length}
+function inVersion(v,id){const c=card(id);if(!c)return false;if(c.type==='jobItem')return(v.jobBullets[c.meta.jobId]||[]).includes(id);return Object.values(v.sections).some(a=>a.includes(id))}
+
+/* ---------- 履歷輸出：HTML ---------- */
+function itemLine(c,v){const t=fill(c.title,v),b=fill(c.content,v);return c.showTitle&&t&&b?{t,b}:{t:'',b:b||t}}
+function autobioBlocks(v){ // [{type:'p',title,body}|{type:'list',style,items:[{t,b}]}]
+  const out=[];let style='bullet';let cur=null;
+  if(v.intro.trim())out.push({type:'p',title:'',body:fill(v.intro,v)});
+  v.sections.autobio.forEach(id=>{const c=card(id);if(!c)return;
+    if(c.type==='autobio'){style=c.meta.listStyle||'bullet';cur=null;out.push({type:'p',title:c.showTitle?fill(c.title,v):'',body:fill(c.content,v)})}
+    else{const it=itemLine(c,v);if(style==='none'){out.push({type:'p',title:'',body:(it.t?it.t+'：':'')+it.b,item:true});return}
+      if(!cur){cur={type:'list',style,items:[]};out.push(cur)}cur.items.push(it)}});
+  if(v.outro.trim())out.push({type:'p',title:'',body:fill(v.outro,v)});
+  for(let i=out.length-1;i>=0;i--){const b=out[i],nx=out[i+1];if(b.type==='p'&&!b.item&&!b.body.trim()&&!(nx&&(nx.type==='list'||nx.item)))out.splice(i,1)} // 空白標題段落且後面沒有項目 → 略過
+  return out;
+}
+function groupBy(ids,fn){const g=[];ids.forEach(id=>{const c=card(id);if(!c)return;const k=fn(c)||'';const last=g[g.length-1];if(last&&last.k===k)last.items.push(c);else g.push({k,items:[c]})});return g}
+function mergeGroups(ids,fn){const m=new Map();ids.forEach(id=>{const c=card(id);if(!c)return;const k=fn(c)||'';if(!m.has(k))m.set(k,[]);m.get(k).push(c)});return[...m].map(([k,items])=>({k,items}))}
+function skillLine(c,v){const t=fill(c.title,v),b=fill(c.content,v);return b?(c.showTitle&&t?t+'：'+b:b):t}
+const R={
+  header(v,cp){const p=state.profile;const sum=v.sections.summary.map(card).filter(Boolean);
+    return`<header class="r-head" data-sec="header"><div style="display:flex;align-items:flex-start"><div class="r-name">${esc(p.name)}${p.englishName?`<span>${esc(p.englishName)}</span>`:''}</div>${cp('header')}</div>
+      ${p.headline?`<div class="r-line main">${html(p.headline,v)}</div>`:''}${p.eduLine?`<div class="r-line">${html(p.eduLine,v)}</div>`:''}${p.tagline?`<div class="r-line">${html(p.tagline,v)}</div>`:''}
+      ${sum.map(c=>`<div class="r-sum">${html(c.content,v)}</div>`).join('')}</header>`},
+  profile(v){const f=state.profile.fields.filter(f=>!v.hiddenFields.includes(f.id)&&f.value);if(!f.length)return'';return`<div class="r-kv">${f.map(f=>`<div><b>${esc(f.label)}</b><span>${html(f.value,v)}</span></div>`).join('')}</div>`},
+  conditions(v){const cs=v.sections.conditions.map(card).filter(Boolean);if(!cs.length)return'';return`<div class="r-kv one">${cs.map(c=>`<div><b>${esc(c.title)}</b><span class="pre">${esc(fill(c.content,v))}</span></div>`).join('')}</div>`},
+  education(v){const cs=v.sections.education.map(card).filter(Boolean);if(!cs.length)return'';return cs.map(c=>`<div class="r-edu"><div><b>${esc(c.title)}</b>　${esc(c.meta.dept||'')} ${esc(c.meta.degree||'')}${c.content?`<div class="pre" style="font-size:9.5pt;color:#475569">${html(c.content,v)}</div>`:''}</div><div class="r-date">${esc(c.meta.start||'')}～${esc(c.meta.end||'')}</div></div>`).join('')},
+  jobs(v,cp){const js=v.sections.jobs.map(card).filter(Boolean);if(!js.length)return'';return js.map(j=>{const m=j.meta;const d=duration(m.start,m.end);
+    const info=[[m.industry,m.size].filter(Boolean).join(' '),m.category,m.extra,m.location].filter(Boolean).join('｜');
+    const groups=groupBy(v.jobBullets[j.id]||[],c=>c.meta.group);
+    return`<div class="r-job"><div class="r-job-h"><span class="jt">${esc(j.title)}</span><span class="jc">${esc(m.company||'')}</span><span class="r-date">${esc(dateRange(m))}${d?`（${d}）`:''}</span>${cp('job:'+j.id,'複製此工作')}</div>
+      ${info?`<div class="r-job-m">${esc(info)}</div>`:''}${j.content?`<div>${html(j.content,v)}</div>`:''}
+      ${groups.map(g=>`${g.k?`<h4>${esc(g.k)}</h4>`:''}<ul>${g.items.map(c=>`<li>${html(c.content,v)}</li>`).join('')}</ul>`).join('')}</div>`}).join('')},
+  languages(v){const cs=v.sections.languages.map(card).filter(Boolean);if(!cs.length)return'';return`<div class="r-kv">${cs.map(c=>`<div><b>${esc(c.title)}</b><span>${html(c.content,v)}</span></div>`).join('')}</div>`},
+  skills(v){const g=mergeGroups(v.sections.skills,c=>c.meta.group);if(!g.length)return'';return g.map(g=>`<div class="r-sk">${g.k?`<b>${esc(g.k)}</b>`:''}<ul>${g.items.map(c=>`<li>${esc(skillLine(c,v))}</li>`).join('')}</ul></div>`).join('')},
+  certs(v){const g=mergeGroups(v.sections.certs,c=>c.meta.category);if(!g.length)return'';return g.map(g=>`<div class="r-sk">${g.k?`<b>${esc(g.k)}</b>`:''}<ul>${g.items.map(c=>`<li>${esc(fill(c.title,v))}${c.meta.issuer?`（${esc(c.meta.issuer)}）`:''}${c.content?`－${html(c.content,v)}`:''}</li>`).join('')}</ul></div>`).join('')},
+  projects(v){const cs=v.sections.projects.map(card).filter(Boolean);if(!cs.length)return'';return cs.map(c=>`<div class="r-proj"><b>■ ${esc(fill(c.title,v))}</b><div>${html(c.content,v)}</div></div>`).join('')},
+  autobio(v){const bl=autobioBlocks(v);if(!bl.length)return'';return`<div class="r-auto">${bl.map(b=>b.type==='p'?`<p>${b.title?`<b>【${esc(b.title)}】</b> `:''}${esc(b.body).replace(/\n/g,'<br>')}</p>`:`<${b.style==='number'?'ol':'ul'}>${b.items.map(i=>`<li>${i.t?`<b>${esc(i.t)}：</b>`:''}${esc(i.b)}</li>`).join('')}</${b.style==='number'?'ol':'ul'}>`).join('')}</div>`}
+};
+function secTitle(k,v){if(k==='jobs')return`工作經歷 <small>總年資 ${years()} 年</small>`;return esc(SECS[k].label)}
+function resumeHTML(v,withCopy){
+  const cp=(k,t)=>withCopy?`<button class="cpy no-print" data-act="copySec" data-k="${k}">📋 ${t||'複製'}</button>`:'';
+  return`<article class="resume">${v.layout.filter(l=>l.visible).map(l=>{const body=R[l.key](v,cp);if(!body)return'';if(l.key==='header')return body;
+    return`<section class="r-sec" data-sec="${l.key}"><h2>${secTitle(l.key,v)}${cp(l.key)}</h2>${body}</section>`}).join('')}</article>`}
+
+/* ---------- 履歷輸出：純文字（104 人力銀行等） ---------- */
+const T={
+  header(v){const p=state.profile;return[p.name+(p.englishName?' '+p.englishName:''),fill(p.headline,v),fill(p.eduLine,v),fill(p.tagline,v),...v.sections.summary.map(card).filter(Boolean).map(c=>'\n'+fill(c.content,v))].filter(s=>s&&s.trim()).join('\n')},
+  profile(v){return state.profile.fields.filter(f=>!v.hiddenFields.includes(f.id)&&f.value).map(f=>`${f.label}：${fill(f.value,v)}`).join('\n')},
+  conditions(v){return v.sections.conditions.map(card).filter(Boolean).map(c=>c.content.includes('\n')?`${c.title}：\n${fill(c.content,v)}`:`${c.title}：${fill(c.content,v)}`).join('\n')},
+  education(v){return v.sections.education.map(card).filter(Boolean).map(c=>`${c.title}｜${[c.meta.dept,c.meta.degree].filter(Boolean).join(' ')}｜${c.meta.start||''}～${c.meta.end||''}${c.content?'\n'+fill(c.content,v):''}`).join('\n')},
+  job(v,j){const m=j.meta;const d=duration(m.start,m.end);const info=[[m.industry,m.size].filter(Boolean).join(' '),m.category,m.extra,m.location].filter(Boolean).join('｜');
+    const L=[`${j.title}｜${m.company||''}`,`${dateRange(m)}${d?`（${d}）`:''}`];if(info)L.push(info);if(j.content)L.push(fill(j.content,v));
+    groupBy(v.jobBullets[j.id]||[],c=>c.meta.group).forEach(g=>{if(g.k)L.push(`【${g.k}】`);g.items.forEach(c=>L.push('• '+fill(c.content,v)))});return L.join('\n')},
+  jobBody(v,j){const L=[];if(j.content)L.push(fill(j.content,v));groupBy(v.jobBullets[j.id]||[],c=>c.meta.group).forEach(g=>{if(g.k)L.push(`【${g.k}】`);g.items.forEach(c=>L.push('• '+fill(c.content,v)))});return L.join('\n')},
+  jobs(v){const js=v.sections.jobs.map(card).filter(Boolean);return js.length?`總年資：${years()}年\n\n`+js.map(j=>T.job(v,j)).join('\n\n'):''},
+  languages(v){return v.sections.languages.map(card).filter(Boolean).map(c=>`${c.title}：${fill(c.content,v)}`).join('\n')},
+  skills(v){return mergeGroups(v.sections.skills,c=>c.meta.group).map(g=>(g.k?g.k+'\n':'')+g.items.map(c=>'• '+skillLine(c,v)).join('\n')).join('\n\n')},
+  certs(v){return mergeGroups(v.sections.certs,c=>c.meta.category).map(g=>(g.k?g.k+'\n':'')+g.items.map(c=>'• '+fill(c.title,v)+(c.meta.issuer?`（${c.meta.issuer}）`:'')+(c.content?'－'+fill(c.content,v):'')).join('\n')).join('\n\n')},
+  projects(v){return v.sections.projects.map(card).filter(Boolean).map(c=>`■ ${fill(c.title,v)}\n${fill(c.content,v)}`).join('\n\n')},
+  autobio(v){const out=[];autobioBlocks(v).forEach(b=>{if(b.type==='p')out.push((b.title?`【${b.title}】`+(b.body?' ':''):'')+b.body);else{const s=b.items.map((i,n)=>`${b.style==='number'?(n+1)+'.':'•'} ${i.t?i.t+'：':''}${i.b}`).join('\n');
+    const last=out[out.length-1];if(last!==undefined&&/^【[^】]*】$/.test(last))out[out.length-1]=last+'\n'+s;else out.push(s)}});return out.join('\n\n')}
+};
+function sectionText(v,k){if(k.startsWith('job:')){const j=card(k.slice(4));return j?T.jobBody(v,j):''}return T[k](v)}
+function fullText(v){return v.layout.filter(l=>l.visible).map(l=>{const t=T[l.key](v);if(!t)return'';return l.key==='header'?t:`【${SECS[l.key].label}】\n${t}`}).filter(Boolean).join('\n\n────────────\n\n')}
+async function copyText(t,what){try{await navigator.clipboard.writeText(t)}catch(e){const ta=document.createElement('textarea');ta.value=t;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove()}toast(`已複製「${what}」純文字（${t.length} 字）`)}
+
+/* ---------- 主畫面 ---------- */
+function render(){document.querySelectorAll('#viewTabs button').forEach(b=>b.classList.toggle('on',b.dataset.v===ui.view));ui.view==='library'?renderLibrary():renderComposer();renderBrand()}
+function renderBrand(){const p=state.profile||{};const nm=[p.name,p.englishName].filter(Boolean).join(' ');const b=$('#brandName');if(b)b.textContent=nm;document.title='履歷組合器'+(p.name?'｜'+p.name:'')}
+
+/* ----- 素材庫 ----- */
+function catCount(k){if(k==='profile')return state.profile.fields.length;if(k==='all')return state.cards.length;if(k==='job')return state.cards.filter(c=>c.type==='job').length;return state.cards.filter(c=>c.type===k).length}
+function catLabel(k){return k==='profile'?'👤 基本資料':k==='all'?'🔎 全部卡片':TYPES[k].icon+' '+TYPES[k].label}
+function renderLibrary(){
+  if(!ui.libTarget||!state.versions.find(v=>v.id===ui.libTarget))ui.libTarget=state.currentVersion;
+  $('#app').innerHTML=`<div class="lib"><nav class="side">${LIB_CATS.map((k,i)=>`${i===1||i===5||i===11?'<hr>':''}<button class="${ui.libCat===k?'on':''}" data-act="libCat" data-k="${k}"><span>${catLabel(k)}</span><span class="cnt">${catCount(k)}</span></button>`).join('')}</nav><div id="libMain"></div></div>`;
+  renderLibMain();
+}
+function renderLibMain(){
+  const k=ui.libCat,el=$('#libMain');
+  if(k==='profile'){el.innerHTML=profileForm();return}
+  const vopts=state.versions.map(v=>`<option value="${v.id}" ${v.id===ui.libTarget?'selected':''}>${esc(v.name)}</option>`).join('');
+  el.innerHTML=`<div class="toolbar"><h2>${catLabel(k)}</h2>${k!=='all'?`<button class="btn pri" data-act="newCard" data-type="${k}">＋ 新增${k==='job'?'工作經歷':TYPES[k].label}</button>`:''}
+    <div class="spacer"></div><input type="search" id="libSearch" placeholder="搜尋標題、內容、標籤…" value="${esc(ui.libSearch)}">
+    <span class="hint">加入版本：</span><select id="libTarget" style="width:auto">${vopts}</select>
+    <div class="tagrow" id="libTags"></div></div><div id="libList"></div>
+    <p class="hint">💡 內容中可輸入 <span class="ph">{{年資}}</span>（自動計算，目前 ${years()} 年）、<span class="ph">{{目標職稱}}</span>、<span class="ph">{{公司}}</span>，輸出時會依版本自動代入。</p>`;
+  renderLibList();
+}
+function libCards(){const k=ui.libCat;let cs=k==='all'?state.cards:k==='job'?state.cards.filter(c=>c.type==='job'||c.type==='jobItem'):state.cards.filter(c=>c.type===k);return cs}
+function matchCard(c,q,tag){if(tag&&!c.tags.includes(tag))return false;if(!q)return true;q=q.toLowerCase();return(c.title+' '+c.content+' '+c.tags.join(' ')+' '+Object.values(c.meta).join(' ')).toLowerCase().includes(q)}
+function renderLibList(){
+  const all=libCards();const tags=[...new Set(all.flatMap(c=>c.tags))];
+  if(ui.libTag&&!tags.includes(ui.libTag))ui.libTag='';
+  $('#libTags').innerHTML=tags.length?`<button class="chip ${!ui.libTag?'on':''}" data-act="libTag" data-t="">全部標籤</button>`+tags.map(t=>`<button class="chip ${ui.libTag===t?'on':''}" data-act="libTag" data-t="${esc(t)}">#${esc(t)}</button>`).join(''):'';
+  const q=ui.libSearch.trim();const v=state.versions.find(x=>x.id===ui.libTarget);
+  if(ui.libCat==='job'){
+    const jobs=state.cards.filter(c=>c.type==='job');
+    $('#libList').innerHTML=jobs.length?jobs.map(j=>{const items=state.cards.filter(c=>c.type==='jobItem'&&c.meta.jobId===j.id);const shown=items.filter(c=>matchCard(c,q,ui.libTag));
+      if((q||ui.libTag)&&!shown.length&&!matchCard(j,q,ui.libTag))return'';const m=j.meta;const d=duration(m.start,m.end);let lastG=null;
+      return`<div class="jobblk"><div class="jobhd"><div style="flex:1"><div class="jt">${esc(j.title)}｜${esc(m.company||'')}</div><div class="hint">${esc(dateRange(m))}${d?`（${d}）`:''}　${esc([m.industry,m.size,m.category,m.extra,m.location].filter(Boolean).join('｜'))}</div><span class="used">${usage(j.id)?`已用於 ${usage(j.id)} 個版本`:''}</span></div>
+        ${addToggle(v,j)}<button class="btn sm" data-act="newCard" data-type="jobItem" data-job="${j.id}">＋ 條目</button>${cardActs(j)}</div>
+        <div class="items">${shown.map(c=>{const g=c.meta.group!==lastG?(lastG=c.meta.group,c.meta.group?`<div class="grp" style="margin:6px 6px 0">▍${esc(c.meta.group)}</div>`:''):'';
+          return`${g}<div class="item"><div class="ix">${phHL(c.content)} ${c.tags.map(t=>`<span class="chip">#${esc(t)}</span>`).join(' ')}</div>${addToggle(v,c)}<button class="ibtn" data-act="moveItem" data-id="${c.id}" data-d="-1" title="上移">↑</button><button class="ibtn" data-act="moveItem" data-id="${c.id}" data-d="1" title="下移">↓</button>${cardActs(c)}</div>`}).join('')||'<div class="hint" style="padding:8px">（沒有符合的條目）</div>'}</div></div>`}).join('')||'<div class="empty">沒有符合的資料</div>':'<div class="empty">尚無工作經歷，按「＋ 新增工作經歷」開始</div>';
+    return}
+  const cs=all.filter(c=>matchCard(c,q,ui.libTag));
+  $('#libList').innerHTML=cs.length?`<div class="grid">${cs.map(c=>cardHTML(c,v)).join('')}</div>`:'<div class="empty">沒有符合的卡片</div>';
+}
+function addToggle(v,c){if(!v)return'';const on=inVersion(v,c.id);const both=c.type==='achievement'||c.type==='project';
+  if(both){const a=v.sections.autobio.includes(c.id),p=v.sections.projects.includes(c.id);return`<button class="btn sm ${a?'pri':''}" data-act="libAdd" data-id="${c.id}" data-sec="autobio" title="加入/移出「${esc(v.name)}」的自傳">${a?'✓':'＋'}自傳</button><button class="btn sm ${p?'pri':''}" data-act="libAdd" data-id="${c.id}" data-sec="projects" title="加入/移出「${esc(v.name)}」的專案經驗">${p?'✓':'＋'}專案</button>`}
+  return`<button class="btn sm ${on?'pri':''}" data-act="libAdd" data-id="${c.id}" title="加入/移出版本「${esc(v.name)}」">${on?'✓ 已加入':'＋ 加入'}</button>`}
+function cardActs(c){return`<span class="acts"><button class="ibtn" data-act="edit" data-id="${c.id}" title="編輯">✎</button><button class="ibtn" data-act="dup" data-id="${c.id}" title="複製一份">⧉</button><button class="ibtn del" data-act="del" data-id="${c.id}" title="刪除">🗑</button></span>`}
+function followItems(v,pid){const L=v.sections.autobio,i=L.indexOf(pid);if(i<0)return null;const out=[];for(let j=i+1;j<L.length;j++){const x=card(L[j]);if(!x)continue;if(x.type==='autobio')break;out.push(x)}return out}
+function paraPreview(c,v){let vv=v&&v.sections.autobio.includes(c.id)?v:state.versions.find(x=>x.sections.autobio.includes(c.id));
+  if(!vv)return`<div class="cc pp"><span class="hint">此段為標題段落（無內文），尚未用於任何版本。加入版本後，接在它後面的成果／專案會成為它的${c.meta.listStyle==='number'?'編號清單':'條列項目'}。</span></div>`;
+  const its=followItems(vv,c.id);
+  if(!its.length)return`<div class="cc pp warn">⚠ 此段落沒有內文，在「${esc(vv.name)}」中後面也沒有接成果／專案，輸出時會略過。請到 組合器 → 自傳 調整順序（或按「恢復預設順序」）。</div>`;
+  return`<div class="cc pp"><span class="hint">標題段落，內容由「${esc(vv.name)}」中其後 ${its.length} 項組成：</span>\n${its.map((x,n)=>`${c.meta.listStyle==='number'?(n+1)+'.':'•'} ${esc(fill(x.title)||snippet(x,30))}`).join('\n')}</div>`}
+function cardHTML(c,v){const T0=TYPES[c.type];const meta=c.type==='education'?`${c.meta.dept||''} ${c.meta.degree||''}｜${c.meta.start||''}～${c.meta.end||''}`:c.type==='cert'?[c.meta.category,c.meta.issuer].filter(Boolean).join('｜'):c.type==='skill'?c.meta.group||'':c.type==='jobItem'?(card(c.meta.jobId)?label(card(c.meta.jobId)):'')+(c.meta.group?'／'+c.meta.group:''):c.type==='job'?`${c.meta.company||''}｜${dateRange(c.meta)}`:c.type==='autobio'?({number:'其後項目：編號清單',bullet:'其後項目：項目符號',none:'其後項目：各自成段'})[c.meta.listStyle||'bullet']+(c.showTitle?'':'｜不顯示標題'):'';
+  const u=usage(c.id);
+  return`<div class="card"><div class="ch"><span class="badge t-${c.type}">${T0.label}</span><div class="ct">${esc(c.title||'（無標題）')}</div>${cardActs(c)}</div>${meta?`<div class="cm">${esc(meta)}</div>`:''}${c.content?`<div class="cc">${phHL(c.content)}</div>`:c.type==='autobio'?paraPreview(c,v):''}
+  <div class="cf">${c.tags.map(t=>`<span class="chip">#${esc(t)}</span>`).join('')}<span class="spacer"></span>${u?`<span class="used">已用於 ${u} 個版本</span>`:''}${addToggle(v,c)}</div></div>`}
+function profileForm(){const p=state.profile;
+  return`<div class="pform"><h3>👤 抬頭資訊</h3><div class="hint">履歷最上方的姓名與標題列。可使用 {{年資}}、{{目標職稱}}。</div><div class="two">
+  <div><label class="f">中文姓名</label><input type="text" data-pf="name" value="${esc(p.name)}"></div><div><label class="f">英文姓名</label><input type="text" data-pf="englishName" value="${esc(p.englishName)}"></div>
+  <div><label class="f">現職標題列</label><input type="text" data-pf="headline" value="${esc(p.headline)}"></div><div><label class="f">學歷標題列</label><input type="text" data-pf="eduLine" value="${esc(p.eduLine)}"></div>
+  <div><label class="f">地點／年資／希望職稱列</label><input type="text" data-pf="tagline" value="${esc(p.tagline)}"></div>
+  <div><label class="f">年資起算（年/月）　→ 目前 <b id="yrs">${years()}</b> 年</label><input type="text" data-pf="careerStart" value="${esc(p.careerStart)}" placeholder="2004/2"></div></div></div>
+  <div class="pform"><h3>📇 個人資料欄位</h3><div class="hint">每個版本可在「組合器 → 個人資料」中勾選要顯示哪些欄位（例如隱藏身障資訊或電話）。</div><div style="margin-top:10px">
+  ${p.fields.map((f,i)=>`<div class="frow"><input type="text" data-ff="label" data-i="${i}" value="${esc(f.label)}"><input type="text" data-ff="value" data-i="${i}" value="${esc(f.value)}"><span style="display:flex"><button class="ibtn" data-act="fMove" data-i="${i}" data-d="-1" ${i===0?'disabled':''}>↑</button><button class="ibtn" data-act="fMove" data-i="${i}" data-d="1" ${i===p.fields.length-1?'disabled':''}>↓</button><button class="ibtn del" data-act="fDel" data-i="${i}" title="刪除欄位">🗑</button></span></div>`).join('')}
+  </div><button class="btn" data-act="fAdd">＋ 新增欄位</button></div>`}
+
+/* ----- 組合器 ----- */
+function renderComposer(){
+  const v=curV();
+  $('#app').innerHTML=`<div class="comp"><div class="panel vpanel"><div class="ph2">📁 投遞版本</div><div class="vlist">${state.versions.map(x=>`<button class="vitem ${x.id===v.id?'on':''}" data-act="pickV" data-id="${x.id}"><b>${esc(x.name)}</b><span>${esc([x.company,x.targetTitle].filter(Boolean).join('｜')||'—')}</span></button>`).join('')}</div>
+    <div class="vacts"><button class="btn sm pri" data-act="vNew">＋ 新增</button><button class="btn sm" data-act="vDup">⧉ 複製</button><button class="btn sm" data-act="vRen">✎ 改名</button><button class="btn sm danger" data-act="vDel">🗑 刪除</button></div></div>
+    <div class="panel"><div class="stabs" id="stabs"></div><div class="sbody" id="sbody"></div></div>
+    <div class="panel stick" id="pvPanel"></div></div>`;
+  renderTabs();renderSecBody();renderPreview();
+}
+function tabCount(v,k){if(k==='jobs')return v.sections.jobs.length;if(k==='profile')return state.profile.fields.length-v.hiddenFields.length;if(SECS[k]&&SECS[k].types)return v.sections[secListKey(k)].length;return''}
+function renderTabs(){const v=curV();$('#stabs').innerHTML=COMP_TABS.map(([k,l])=>{const n=tabCount(v,k);const hidden=SECS[k]&&!v.layout.find(x=>x.key===k).visible;return`<button class="${ui.secTab===k?'on':''}" data-act="secTab" data-k="${k}" title="${hidden?'此區段目前設定為不顯示':''}">${l}${n!==''?`<span class="n">${n}</span>`:''}${hidden?' 🚫':''}</button>`}).join('')}
+function selItem(c,i,len,extraCls,actPrefix){const T0=TYPES[c.type];return`<li class="${extraCls||''}" data-id="${c.id}"><span class="drag" title="拖曳排序">⋮⋮</span><span class="badge t-${c.type}">${T0.label.replace('工作內容條目','條目')}</span><span class="lx">${c.type==='jobItem'&&c.meta.group?`<span class="gl">${esc(c.meta.group)}</span>`:''}${c.type==='jobItem'?esc(snippet(c,120)):`<b>${esc(fill(c.title)||'（無標題）')}</b> <span class="hint">${esc(snippet(c,60))}</span>`}</span>
+  <button class="ibtn" data-act="${actPrefix}Up" data-i="${i}" ${i===0?'disabled':''} title="上移">↑</button><button class="ibtn" data-act="${actPrefix}Dn" data-i="${i}" ${i===len-1?'disabled':''} title="下移">↓</button><button class="ibtn" data-act="edit" data-id="${c.id}" title="編輯卡片">✎</button><button class="ibtn del" data-act="${actPrefix}Rm" data-i="${i}" title="從此版本移除">✕</button></li>`}
+function renderSecBody(){
+  const v=curV(),k=ui.secTab,el=$('#sbody');
+  if(k==='info'){el.innerHTML=`<label class="f">版本名稱</label><input type="text" data-vf="name" value="${esc(v.name)}">
+    <div class="two"><div><label class="f">應徵公司 <span class="hint">→ {{公司}}</span></label><input type="text" data-vf="company" value="${esc(v.company)}" placeholder="例：A公司"></div>
+    <div><label class="f">目標職稱 <span class="hint">→ {{目標職稱}}</span></label><input type="text" data-vf="targetTitle" value="${esc(v.targetTitle)}" placeholder="例：職安主任"></div></div>
+    <label class="f">自傳開頭（選填，會放在自傳最前面）</label><textarea data-vf="intro" placeholder="例：您好，我是○○○，非常希望能加入{{公司}}擔任{{目標職稱}}…">${esc(v.intro)}</textarea>
+    <label class="f">自傳結尾（選填，會放在自傳最後面）</label><textarea data-vf="outro" placeholder="例：期待有機會為{{公司}}貢獻所長，謝謝您撥冗閱讀。">${esc(v.outro)}</textarea>
+    <label class="f">備註（僅自己看，不會輸出）</label><textarea data-vf="note" style="min-height:60px">${esc(v.note)}</textarea>
+    <p class="hint">目前年資自動計算為 <b>${years()}</b> 年（自 ${esc(state.profile.careerStart)} 起算，可在 素材庫 → 基本資料 修改）。</p>`;return}
+  if(k==='profile'){el.innerHTML=`<h4>勾選要在此版本顯示的個人資料欄位</h4>${state.profile.fields.map(f=>`<label class="chk"><input type="checkbox" data-act="fToggle" data-id="${f.id}" ${v.hiddenFields.includes(f.id)?'':'checked'}><b style="width:6em">${esc(f.label)}</b><span class="hint">${esc(f.value)}</span></label>`).join('')}<p class="hint">欄位內容請到 素材庫 → 基本資料 編輯。</p>`;return}
+  if(k==='layout'){el.innerHTML=`<h4>履歷區段順序與顯示（拖曳或用箭頭調整）</h4><ul class="sel" id="layoutList">${v.layout.map((l,i)=>`<li data-k="${l.key}"><span class="drag">⋮⋮</span><input type="checkbox" data-act="layToggle" data-i="${i}" ${l.visible?'checked':''} style="width:16px;height:16px;accent-color:#0f766e"><span class="lx"><b>${esc(SECS[l.key].label)}</b></span><button class="ibtn" data-act="layUp" data-i="${i}" ${i===0?'disabled':''}>↑</button><button class="ibtn" data-act="layDn" data-i="${i}" ${i===v.layout.length-1?'disabled':''}>↓</button></li>`).join('')}</ul><p class="hint">取消勾選＝此版本不輸出該區段（卡片選擇仍保留）。</p>`;
+    sortable($('#layoutList'),()=>v.layout,afterComp);return}
+  if(k==='jobs'){renderJobsTab(v,el);return}
+  const lk=secListKey(k),arr=v.sections[lk];let prevPara=false;
+  const items=arr.map((id,i)=>{const c=card(id);let cls='';if(k==='autobio'){if(c.type==='autobio'){prevPara=true;const nx=card(arr[i+1]);if(!c.content.trim()&&!(nx&&nx.type!=='autobio'))cls='warnp'}else if(prevPara)cls='sub'}return selItem(c,i,arr.length,cls,'s')}).join('');
+  const tips={autobio:'自傳段落（藍）後面接的「現職成果／專案」卡片會自動變成該段落下的編號或條列項目。',projects:'專案經驗區：以「■ 專案名稱＋內容」呈現。',header:'抬頭的姓名、標題列請到 素材庫 → 基本資料 修改；這裡選擇要放哪段摘要。'};
+  el.innerHTML=`${tips[k]?`<p class="hint" style="margin-top:0">💡 ${tips[k]}</p>`:''}<h4>已選擇（${arr.length}）<span class="spacer" style="flex:1"></span>${k==='autobio'&&arr.length>1&&canonInfo().L.length?`<button class="btn sm" data-act="autoRestore" title="依原始履歷（完整版）的段落順序重新排列，並把成果／專案放回對應段落下">↺ 恢復預設順序</button>`:''}${arr.length?`<button class="btn sm danger" data-act="sClear">全部移除</button>`:''}</h4>
+    <ul class="sel" id="selList">${items||'<li class="none" style="border:0;justify-content:center">尚未選擇任何卡片，從下方點選加入</li>'}</ul>
+    <h4>從素材庫加入 <span class="spacer" style="flex:1"></span><button class="btn sm" data-act="newCard" data-type="${SECS[k].types[0]}" data-tosec="${lk}">＋ 新增卡片</button><button class="btn sm" data-act="sAll">全部加入</button></h4>
+    <div class="pfilter"><input type="search" id="pickSearch" placeholder="搜尋…" value="${esc(ui.pickSearch)}"><select id="pickTag"></select></div><div class="pick" id="pickList"></div>`;
+  if(arr.length)sortable($('#selList'),()=>arr,afterComp);
+  renderPick();
+}
+function pickCands(){const v=curV(),k=ui.secTab,lk=secListKey(k);return state.cards.filter(c=>SECS[k].types.includes(c.type)&&!v.sections[lk].includes(c.id))}
+function renderPick(){
+  const k=ui.secTab;const cands=pickCands();const tags=[...new Set(cands.flatMap(c=>c.tags))];if(ui.pickTag&&!tags.includes(ui.pickTag))ui.pickTag='';
+  $('#pickTag').innerHTML=`<option value="">全部標籤</option>`+tags.map(t=>`<option ${t===ui.pickTag?'selected':''} value="${esc(t)}">#${esc(t)}</option>`).join('');
+  const shown=cands.filter(c=>matchCard(c,ui.pickSearch.trim(),ui.pickTag));
+  const byType=SECS[k].types.map(t=>({t,cs:shown.filter(c=>c.type===t)})).filter(g=>g.cs.length);
+  $('#pickList').innerHTML=byType.length?byType.map(g=>`${SECS[k].types.length>1?`<div class="pg">${TYPES[g.t].icon} ${TYPES[g.t].label}（${g.cs.length}）</div>`:''}${g.cs.map(c=>`<div class="pi" data-act="sAdd" data-id="${c.id}" title="點擊加入"><span class="addbtn">＋</span><span class="lx"><b>${esc(fill(c.title)||'（無標題）')}</b>${c.content?`<small>${esc(snippet(c,110))}</small>`:''}</span></div>`).join('')}`).join(''):`<div class="hint" style="padding:12px;text-align:center">${cands.length?'沒有符合篩選的卡片':'素材庫中的卡片都已加入 ✔'}</div>`;
+}
+function renderJobsTab(v,el){
+  const sel=v.sections.jobs;const rest=state.cards.filter(c=>c.type==='job'&&!sel.includes(c.id));
+  el.innerHTML=`<p class="hint" style="margin-top:0">💡 拖曳調整工作順序；展開後可挑選、排序每份工作要放的條目。</p><h4>已選擇的工作（${sel.length}）</h4><ul class="jsel" id="jobSel">${sel.map((id,i)=>{const j=card(id);const bl=v.jobBullets[id]||[];const total=state.cards.filter(c=>c.type==='jobItem'&&c.meta.jobId===id).length;const open=ui.openJobs[id];
+    return`<li data-id="${id}"><div class="jrow"><span class="drag">⋮⋮</span><span class="lx"><b>${esc(j.title)}</b>｜${esc(j.meta.company||'')} <span class="hint">${esc(dateRange(j.meta))}</span></span>
+      <button class="btn sm ${open?'pri':''}" data-act="jOpen" data-id="${id}">條目 ${bl.length}/${total} ${open?'▲':'▼'}</button><button class="ibtn" data-act="jUp" data-i="${i}" ${i===0?'disabled':''}>↑</button><button class="ibtn" data-act="jDn" data-i="${i}" ${i===sel.length-1?'disabled':''}>↓</button><button class="ibtn del" data-act="jRm" data-i="${i}" title="從此版本移除">✕</button></div>
+      ${open?jobInner(v,j):''}</li>`}).join('')||'<li class="hint" style="padding:10px;border:1px dashed #cbd5e1">尚未選擇工作</li>'}</ul>
+    ${rest.length?`<h4>可加入的工作</h4><div class="pick">${rest.map(j=>`<div class="pi" data-act="jAdd" data-id="${j.id}"><span class="addbtn">＋</span><span class="lx"><b>${esc(j.title)}</b>｜${esc(j.meta.company||'')}<small>${esc(dateRange(j.meta))}（加入時預設帶入全部條目）</small></span></div>`).join('')}</div>`:''}`;
+  sortable($('#jobSel'),()=>sel,afterComp);
+  sel.forEach(id=>{if(ui.openJobs[id]){const ul=document.querySelector(`.bsel[data-job="${id}"]`);if(ul&&(v.jobBullets[id]||[]).length)sortable(ul,()=>v.jobBullets[id],afterComp)}});
+}
+function jobInner(v,j){const bl=v.jobBullets[j.id]||(v.jobBullets[j.id]=[]);const avail=state.cards.filter(c=>c.type==='jobItem'&&c.meta.jobId===j.id&&!bl.includes(c.id));
+  return`<div class="jin"><h4>已選條目（${bl.length}）<span style="flex:1"></span><button class="btn sm" data-act="bAll" data-job="${j.id}">全選</button><button class="btn sm danger" data-act="bClear" data-job="${j.id}">清空</button><button class="btn sm" data-act="newCard" data-type="jobItem" data-job="${j.id}" data-tojob="1">＋ 新條目</button></h4>
+  <ul class="sel bsel" data-job="${j.id}">${bl.map((id,i)=>selItem(card(id),i,bl.length,'','b').replace(/data-act="b(Up|Dn|Rm)"/g,`data-job="${j.id}" data-act="b$1"`)).join('')||'<li class="none" style="border:0;justify-content:center">尚未選擇條目</li>'}</ul>
+  ${avail.length?`<h4>可加入的條目（${avail.length}）</h4><div class="pick" style="max-height:260px">${avail.map(c=>`<div class="pi" data-act="bAdd" data-job="${j.id}" data-id="${c.id}"><span class="addbtn">＋</span><span class="lx">${c.meta.group?`<span class="gl" style="color:#0f766e;font-weight:700;font-size:11px">${esc(c.meta.group)}</span> `:''}${esc(fill(c.content))}</span></div>`).join('')}</div>`:''}</div>`}
+function renderPreview(){
+  const v=curV(),el=$('#pvPanel');if(!el)return;
+  const secs=v.layout.filter(l=>l.visible).map(l=>l.key);
+  const autoLen=T.autobio(v).length;
+  el.innerHTML=`<div class="pvbar"><div class="seg">${[['full','完整履歷'],['autobio','只看自傳'],['text','純文字']].map(([k,l])=>`<button class="${ui.pv===k?'on':''}" data-act="pv" data-k="${k}">${l}</button>`).join('')}</div><span style="flex:1"></span>
+    <button class="btn pri" data-act="print">🖨 列印／存成 PDF</button><button class="btn" data-act="copyAll">📋 複製全部</button></div>
+    <div class="copyrow"><span class="hint">複製純文字：</span>${secs.map(k=>`<button class="chip" data-act="copySec" data-k="${k}">${esc(SECS[k].label)}</button>`).join('')}<span class="hint" style="margin-left:auto">自傳 ${autoLen} 字</span></div>
+    <div class="pvwrap"><div class="paper" id="paper">${ui.pv==='full'?resumeHTML(v,true):ui.pv==='autobio'?`<div class="resume"><section class="r-sec"><h2>自傳<button class="cpy" data-act="copySec" data-k="autobio">📋 複製</button></h2>${R.autobio(v)||'<p class="hint">此版本尚未選擇自傳內容</p>'}</section></div>`:`<pre class="txt">${esc(fullText(v))}</pre>`}</div></div>`;
+}
+function afterComp(){touch();renderTabs();renderSecBody();renderPreview()}
+
+/* ---------- 拖曳 ---------- */
+function sortable(el,getArr,done){if(!el||!window.Sortable)return;Sortable.create(el,{handle:'.drag',animation:150,ghostClass:'ghost',onEnd(e){if(e.oldIndex===e.newIndex)return;const a=getArr();const[x]=a.splice(e.oldIndex,1);a.splice(e.newIndex,0,x);done()}})}
+const swap=(a,i,d)=>{const j=i+d;if(j<0||j>=a.length)return;[a[i],a[j]]=[a[j],a[i]]};
+
+/* ---------- 編輯器 ---------- */
+function openEditor(id,opts={}){
+  const isNew=!id;const c=isNew?{id:uid(opts.type),type:opts.type,title:'',content:'',tags:[],meta:opts.type==='jobItem'?{jobId:opts.job,group:''}:opts.type==='autobio'?{listStyle:'bullet'}:{},showTitle:!['jobItem','summary'].includes(opts.type)}:clone(card(id));
+  const T0=TYPES[c.type];const jobs=state.cards.filter(x=>x.type==='job');
+  const allTags=[...new Set(state.cards.flatMap(x=>x.tags))];
+  $('#modal').innerHTML=`<div class="mask" id="mask"><div class="dlg" role="dialog"><div class="dh"><span class="badge t-${c.type}">${T0.label}</span><h3>${isNew?'新增':'編輯'}卡片</h3><button class="ibtn" data-act="mClose" title="關閉">✕</button></div><div class="db">
+    ${c.type==='jobItem'?`<label class="f">所屬工作</label><select id="e_job">${jobs.map(j=>`<option value="${j.id}" ${j.id===c.meta.jobId?'selected':''}>${esc(label(j))}</option>`).join('')}</select>`:''}
+    <label class="f">${T0.tl}</label><input type="text" id="e_title" value="${esc(c.title)}">
+    ${(T0.fields||[]).map(([k,l,ph,opts])=>`<label class="f">${l}</label>${opts?`<select id="e_m_${k}">${opts.map(([v,t])=>`<option value="${v}" ${c.meta[k]===v?'selected':''}>${t}</option>`).join('')}</select>`:`<input type="text" id="e_m_${k}" value="${esc(c.meta[k]||'')}" placeholder="${esc(ph||'')}" ${k==='group'?'list="dl_grp"':''}>`}`).join('')}
+    ${c.type==='jobItem'||c.type==='skill'?`<datalist id="dl_grp">${[...new Set(state.cards.filter(x=>x.type===c.type).map(x=>x.meta.group).filter(Boolean))].map(g=>`<option value="${esc(g)}">`).join('')}</datalist>`:''}
+    <label class="f">${T0.cl} <span class="hint" id="e_cnt"></span></label><textarea id="e_content" style="min-height:${['autobio','condition','summary'].includes(c.type)?220:120}px">${esc(c.content)}</textarea>
+    <div class="hint">可插入：<button class="chip" data-act="ins" data-t="{{年資}}">{{年資}}</button> <button class="chip" data-act="ins" data-t="{{目標職稱}}">{{目標職稱}}</button> <button class="chip" data-act="ins" data-t="{{公司}}">{{公司}}</button></div>
+    ${['autobio','achievement','project','skill'].includes(c.type)?`<label class="chk" style="border:0;margin-top:8px"><input type="checkbox" id="e_show" ${c.showTitle?'checked':''}> 輸出時顯示標題${c.type==='autobio'?'（【標題】內容）':'（標題：內容）'}</label>`:''}
+    <label class="f">標籤（以逗號分隔）</label><input type="text" id="e_tags" value="${esc(c.tags.join(', '))}" list="dl_tags" placeholder="例：PSM, 承攬商, 量化成果"><datalist id="dl_tags">${allTags.map(t=>`<option value="${esc(t)}">`).join('')}</datalist>
+    <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px">${allTags.slice(0,30).map(t=>`<button class="chip" data-act="addTag" data-t="${esc(t)}">+${esc(t)}</button>`).join('')}</div>
+    </div><div class="df">${isNew?'':`<button class="btn danger" data-act="del" data-id="${c.id}" style="margin-right:auto">🗑 刪除</button>`}<button class="btn" data-act="mClose">取消</button><button class="btn pri" data-act="mSave">💾 儲存</button></div></div></div>`;
+  const ta=$('#e_content');const cnt=()=>$('#e_cnt').textContent=`（${fill(ta.value).length} 字）`;ta.addEventListener('input',cnt);cnt();
+  $('#modal').dataset.orig=JSON.stringify(readEditor(c));
+  editing={c,isNew,opts};setTimeout(()=>$('#e_title').focus(),30);
+}
+let editing=null;
+function readEditor(c){const o={title:$('#e_title').value.trim(),content:$('#e_content').value.replace(/\s+$/,''),tags:$('#e_tags').value.split(/[,，、]/).map(s=>s.trim().replace(/^#/,'')).filter(Boolean),meta:{...c.meta}};
+  (TYPES[c.type].fields||[]).forEach(([k])=>o.meta[k]=$('#e_m_'+k).value.trim());if($('#e_job'))o.meta.jobId=$('#e_job').value;o.showTitle=$('#e_show')?$('#e_show').checked:c.showTitle;return o}
+function closeEditor(force){if(!editing)return;if(!force&&JSON.stringify(readEditor(editing.c))!==$('#modal').dataset.orig&&!confirm('內容已修改但尚未儲存，確定要放棄修改嗎？'))return;$('#modal').innerHTML='';editing=null}
+function saveEditor(){const{c,isNew,opts}=editing;const o=readEditor(c);if(!o.title&&!o.content){alert('請至少填寫標題或內容');return}
+  Object.assign(c,o);
+  if(isNew){if(c.type==='jobItem'){const idx=state.cards.map(x=>x.type==='jobItem'&&x.meta.jobId===c.meta.jobId||x.id===c.meta.jobId).lastIndexOf(true);state.cards.splice(idx+1,0,c)}else state.cards.push(c);
+    const v=curV();if(opts.tosec){v.sections[opts.tosec].push(c.id)}if(opts.tojob){(v.jobBullets[c.meta.jobId]=v.jobBullets[c.meta.jobId]||[]).push(c.id)}
+    if(c.type==='job'){state.versions.forEach(x=>x.jobBullets[c.id]=[])}}
+  else{const i=state.cards.findIndex(x=>x.id===c.id);const old=state.cards[i];
+    if(c.type==='jobItem'&&old.meta.jobId!==c.meta.jobId){state.versions.forEach(v=>{Object.values(v.jobBullets).forEach(a=>{const k=a.indexOf(c.id);if(k>-1)a.splice(k,1)})});state.cards.splice(i,1);const idx=state.cards.map(x=>x.type==='jobItem'&&x.meta.jobId===c.meta.jobId||x.id===c.meta.jobId).lastIndexOf(true);state.cards.splice(idx+1,0,c)}
+    else state.cards[i]=c}
+  closeEditor(true);touch();render();toast(isNew?'已新增卡片':'已儲存修改')}
+function delCard(id){const c=card(id);if(!c)return;const kids=c.type==='job'?state.cards.filter(x=>x.type==='jobItem'&&x.meta.jobId===id):[];const u=usage(id);
+  if(!confirm(`確定刪除「${label(c)}」？${kids.length?`\n（包含其下 ${kids.length} 個條目）`:''}${u?`\n⚠ 此卡片正被 ${u} 個投遞版本使用，刪除後會從這些版本移除。`:''}\n\n此動作無法復原（建議先匯出備份）。`))return;
+  const rm=new Set([id,...kids.map(k=>k.id)]);state.cards=state.cards.filter(x=>!rm.has(x.id));
+  state.versions.forEach(v=>{Object.keys(v.sections).forEach(k=>v.sections[k]=v.sections[k].filter(x=>!rm.has(x)));Object.keys(v.jobBullets).forEach(k=>{if(rm.has(k))delete v.jobBullets[k];else v.jobBullets[k]=v.jobBullets[k].filter(x=>!rm.has(x))})});
+  if(editing)closeEditor(true);touch();render();toast('已刪除')}
+function dupCard(id){const c=card(id);const i=state.cards.indexOf(c);const n=clone(c);n.id=uid(c.type);n.title=(c.title||'')+(c.type==='jobItem'&&!c.title?'':'（副本）');
+  if(c.type==='job'){const kids=state.cards.filter(x=>x.type==='jobItem'&&x.meta.jobId===id).map(k=>({...clone(k),id:uid('jobItem'),meta:{...k.meta,jobId:n.id}}));const last=state.cards.map(x=>x.id===id||x.meta.jobId===id).lastIndexOf(true);state.cards.splice(last+1,0,n,...kids);state.versions.forEach(v=>v.jobBullets[n.id]=[])}
+  else state.cards.splice(i+1,0,n);touch();render();toast('已複製一份（尚未加入任何版本）')}
+
+/* ---------- 事件 ---------- */
+const A={
+  syncOpen(){SYNC.openSettings()}, syncNow(){SYNC.syncNow()},
+  view(d){ui.view=d.v;render();window.scrollTo(0,0)},
+  libCat(d){ui.libCat=d.k;ui.libTag='';render()},
+  libTag(d){ui.libTag=d.t;renderLibList()},
+  newCard(d){openEditor(null,{type:d.type,job:d.job,tosec:d.tosec,tojob:d.tojob})},
+  edit(d){openEditor(d.id)}, dup(d){dupCard(d.id)}, del(d){delCard(d.id)},
+  mClose(){closeEditor()}, mSave(){saveEditor()},
+  ins(d){const ta=$('#e_content');const s=ta.selectionStart,e=ta.selectionEnd;ta.value=ta.value.slice(0,s)+d.t+ta.value.slice(e);ta.focus();ta.selectionStart=ta.selectionEnd=s+d.t.length;ta.dispatchEvent(new Event('input'))},
+  addTag(d){const el=$('#e_tags');const t=el.value.split(/[,，、]/).map(s=>s.trim()).filter(Boolean);if(!t.includes(d.t))t.push(d.t);el.value=t.join(', ')},
+  moveItem(d){const c=card(d.id);const sib=state.cards.filter(x=>x.type==='jobItem'&&x.meta.jobId===c.meta.jobId);const k=sib.indexOf(c);const o=sib[k+ +d.d];if(!o)return;const i=state.cards.indexOf(c),j=state.cards.indexOf(o);[state.cards[i],state.cards[j]]=[state.cards[j],state.cards[i]];touch();renderLibList()},
+  libAdd(d){const v=state.versions.find(x=>x.id===ui.libTarget);const c=card(d.id);if(!v||!c)return;let arr;
+    if(c.type==='jobItem'){arr=v.jobBullets[c.meta.jobId]=v.jobBullets[c.meta.jobId]||[];if(!arr.includes(c.id)&&!v.sections.jobs.includes(c.meta.jobId))v.sections.jobs.push(c.meta.jobId)}
+    else{const sec=d.sec||Object.keys(SECS).find(k=>SECS[k].types&&SECS[k].types.includes(c.type));arr=v.sections[secListKey(sec)]}
+    const i=arr.indexOf(c.id);if(i>-1)arr.splice(i,1);else arr.push(c.id);touch();renderLibList();toast(i>-1?`已從「${v.name}」移除`:`已加入「${v.name}」`)},
+  fAdd(){state.profile.fields.push({id:uid('f'),label:'新欄位',value:''});touch();renderLibMain()},
+  fDel(d){const f=state.profile.fields[d.i];if(!confirm(`確定刪除欄位「${f.label}」？`))return;state.profile.fields.splice(d.i,1);touch();renderLibMain()},
+  fMove(d){swap(state.profile.fields,+d.i,+d.d);touch();renderLibMain()},
+  pickV(d){state.currentVersion=d.id;ui.openJobs={};touch();renderComposer()},
+  vNew(){const n=prompt('新版本名稱（例：A公司 職安主任）','新投遞版本');if(!n)return;const v=newVersionObj(n.trim());state.versions.push(v);state.currentVersion=v.id;ui.secTab='info';touch();renderComposer();toast('已建立版本，已預選基本資料、學歷、工作（不含條目）、技能、證照；請挑選自傳與條目')},
+  vDup(){const s=curV();const n=prompt('複製後的版本名稱',s.name+'（副本）');if(!n)return;const v=clone(s);v.id=uid('v');v.name=n.trim();state.versions.splice(state.versions.indexOf(s)+1,0,v);state.currentVersion=v.id;touch();renderComposer();toast('已複製版本')},
+  vRen(){const v=curV();const n=prompt('重新命名版本',v.name);if(!n)return;v.name=n.trim();touch();renderComposer()},
+  vDel(){const v=curV();if(state.versions.length<=1){alert('至少需要保留一個版本');return}if(!confirm(`確定刪除版本「${v.name}」？\n（素材庫卡片不會被刪除）`))return;state.versions=state.versions.filter(x=>x!==v);state.currentVersion=state.versions[0].id;touch();renderComposer();toast('已刪除版本')},
+  secTab(d){ui.secTab=d.k;ui.pickSearch='';ui.pickTag='';renderTabs();renderSecBody()},
+  sAdd(d){const v=curV();v.sections[secListKey(ui.secTab)].push(d.id);afterComp()},
+  sAll(){const v=curV();pickCands().filter(c=>matchCard(c,ui.pickSearch.trim(),ui.pickTag)).forEach(c=>v.sections[secListKey(ui.secTab)].push(c.id));afterComp()},
+  autoRestore(){const v=curV();const nw=canonOrder(v.sections.autobio);if(nw.join()===v.sections.autobio.join()){toast('已經是預設順序');return}const ci=canonInfo();const ttl=id=>(card(id)||{}).title||'';if(!confirm('依預設（完整版原始）順序重新排列「'+v.name+'」的自傳？\n・段落依：'+ci.L.filter(id=>(card(id)||{}).type==='autobio').map(ttl).join(' → ')+'\n・現職成果卡片放回「'+ttl(ci.achPara)+'」下，專案卡片放回「'+ttl(ci.projPara)+'」下\n・只調整順序，不會新增或移除卡片'))return;v.sections.autobio=nw;afterComp();toast('已恢復預設順序')},
+  sClear(){if(!confirm('確定要把此區段已選的卡片全部移除？（卡片仍保留在素材庫）'))return;curV().sections[secListKey(ui.secTab)]=[];afterComp()},
+  sUp(d){swap(curV().sections[secListKey(ui.secTab)],+d.i,-1);afterComp()}, sDn(d){swap(curV().sections[secListKey(ui.secTab)],+d.i,1);afterComp()},
+  sRm(d){curV().sections[secListKey(ui.secTab)].splice(+d.i,1);afterComp()},
+  jAdd(d){const v=curV();v.sections.jobs.push(d.id);v.jobBullets[d.id]=state.cards.filter(c=>c.type==='jobItem'&&c.meta.jobId===d.id).map(c=>c.id);afterComp()},
+  jRm(d){const v=curV();v.sections.jobs.splice(+d.i,1);afterComp()},
+  jUp(d){swap(curV().sections.jobs,+d.i,-1);afterComp()}, jDn(d){swap(curV().sections.jobs,+d.i,1);afterComp()},
+  jOpen(d){ui.openJobs[d.id]=!ui.openJobs[d.id];renderSecBody()},
+  bAdd(d){const v=curV();(v.jobBullets[d.job]=v.jobBullets[d.job]||[]).push(d.id);afterComp()},
+  bRm(d){curV().jobBullets[d.job].splice(+d.i,1);afterComp()},
+  bUp(d){swap(curV().jobBullets[d.job],+d.i,-1);afterComp()}, bDn(d){swap(curV().jobBullets[d.job],+d.i,1);afterComp()},
+  bAll(d){const v=curV();const cur=v.jobBullets[d.job]||[];v.jobBullets[d.job]=cur.concat(state.cards.filter(c=>c.type==='jobItem'&&c.meta.jobId===d.job&&!cur.includes(c.id)).map(c=>c.id));afterComp()},
+  bClear(d){if(!confirm('清空此工作的所有已選條目？'))return;curV().jobBullets[d.job]=[];afterComp()},
+  layUp(d){swap(curV().layout,+d.i,-1);afterComp()}, layDn(d){swap(curV().layout,+d.i,1);afterComp()},
+  layToggle(d,el){curV().layout[+d.i].visible=el.checked;afterComp()},
+  fToggle(d,el){const v=curV();v.hiddenFields=v.hiddenFields.filter(x=>x!==d.id);if(!el.checked)v.hiddenFields.push(d.id);touch();renderTabs();renderPreview()},
+  pv(d){ui.pv=d.k;renderPreview()},
+  copySec(d){const v=curV();const name=d.k.startsWith('job:')?label(card(d.k.slice(4))):SECS[d.k].label;copyText(sectionText(v,d.k),name)},
+  copyAll(){copyText(fullText(curV()),'完整履歷')},
+  print(){doPrint()},
+  export(){exportJSON()}, import(){$('#importFile').click()}, reset(){resetAll()}
+};
+document.addEventListener('click',e=>{const el=e.target.closest('[data-act]');if(!el)return;if(e.target.id==='mask')return;const a=A[el.dataset.act];if(!a)return;if(el.tagName==='INPUT'&&el.type==='checkbox'){a(el.dataset,el,e);return}e.preventDefault();a(el.dataset,el,e)});
+document.addEventListener('mousedown',e=>{if(e.target.id==='mask')e.target.dataset.down='1'});
+document.addEventListener('mouseup',e=>{if(e.target.id==='mask'&&e.target.dataset.down)closeEditor();const m=$('#mask');if(m)delete m.dataset.down});
+document.addEventListener('keydown',e=>{if(!editing)return;if(e.key==='Escape')closeEditor();if((e.ctrlKey||e.metaKey)&&e.key==='Enter')saveEditor();if((e.ctrlKey||e.metaKey)&&e.key==='s'){e.preventDefault();saveEditor()}});
+document.addEventListener('input',e=>{const t=e.target;
+  if(t.id==='libSearch'){ui.libSearch=t.value;renderLibList();return}
+  if(t.id==='pickSearch'){ui.pickSearch=t.value;renderPick();return}
+  if(t.dataset.pf){state.profile[t.dataset.pf]=t.value;if(t.dataset.pf==='careerStart')$('#yrs').textContent=years();touch();return}
+  if(t.dataset.ff){state.profile.fields[+t.dataset.i][t.dataset.ff]=t.value;touch();return}
+  if(t.dataset.vf){const v=curV();v[t.dataset.vf]=t.value;touch();renderPreview();if(['name','company','targetTitle'].includes(t.dataset.vf)){const b=document.querySelector(`.vitem[data-id="${v.id}"]`);if(b)b.innerHTML=`<b>${esc(v.name)}</b><span>${esc([v.company,v.targetTitle].filter(Boolean).join('｜')||'—')}</span>`}}
+});
+document.addEventListener('change',e=>{const t=e.target;if(t.id==='libTarget'){ui.libTarget=t.value;renderLibList()}if(t.id==='pickTag'){ui.pickTag=t.value;renderPick()}});
+
+/* ---------- 列印 ---------- */
+function preparePrint(){const v=curV();$('#printRoot').innerHTML=resumeHTML(v,false)}
+function doPrint(){if(saveT)saveNow();preparePrint();const t=document.title;document.title=`${state.profile.name}_履歷_${curV().name}`.replace(/[\\/:*?"<>|｜]/g,'_');setTimeout(()=>{window.print();setTimeout(()=>document.title=t,500)},50)}
+window.addEventListener('beforeprint',preparePrint);
+
+/* ---------- 備份 ---------- */
+function exportJSON(){saveNow();const d=new Date();const p=n=>String(n).padStart(2,'0');const name=`履歷組合器備份_${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}.json`;
+  const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1000);toast('已下載備份：'+name)}
+$('#importFile').addEventListener('change',e=>{const f=e.target.files[0];e.target.value='';if(!f)return;const r=new FileReader();r.onload=()=>{try{const s=JSON.parse(r.result);if(!validState(s))throw new Error('格式不符');
+  if(!confirm(`確定匯入備份「${f.name}」？\n含 ${s.cards.length} 張卡片、${s.versions.length} 個版本。\n目前瀏覽器中的資料將被取代（建議先匯出備份）。`))return;state=normalize(s);saveNow();ui.openJobs={};render();checkDataUpdate();toast('匯入完成')}catch(err){alert('匯入失敗：這不是有效的履歷組合器備份檔。\n'+err.message)}};r.readAsText(f,'utf-8')});
+function resetAll(){if(!confirm((SEED_HAS_DATA?'確定要重設為初始履歷資料？':'確定要清空為空白範本？')+'\n所有新增、修改的卡片與版本都會被清除！'+(window.SYNC&&SYNC.enabled()?'\n⚠ 已開啟雲端同步：重設後會同步覆蓋 GitHub 上的 resume.json（可從 GitHub 歷史紀錄還原）。':'')))return;if(!confirm('再次確認：此動作無法復原。要繼續嗎？（建議先按「匯出備份」）'))return;state=normalize(buildSeed());saveNow();ui.openJobs={};ui.secTab='info';render();checkDataUpdate();toast('已重設為初始資料')}
+
+
+/* ---------- 資料更新（證照修正，非破壞性） ---------- */
+function canonInfo(){const L=((state.defaults&&state.defaults.autobioOrder)||[]).filter(id=>card(id));const ty=id=>(card(id)||{}).type;
+  const fa=L.findIndex(id=>ty(id)==='achievement'),fp=L.findIndex(id=>ty(id)==='project');
+  const achEnd=fa<0?undefined:L.find((id,i)=>i>fa&&ty(id)==='autobio'),projEnd=fp<0?undefined:L.find((id,i)=>i>fp&&ty(id)==='autobio');
+  const paraBefore=i=>{for(let j=i;j>=0;j--)if(ty(L[j])==='autobio')return L[j]};
+  return{L,achEnd,projEnd,achPara:fa<0?undefined:paraBefore(fa),projPara:fp<0?undefined:paraBefore(fp)}}
+function canonOrder(arr){const {L,achEnd,projEnd}=canonInfo();const set=new Set(arr);const ex=arr.filter(id=>!L.includes(id)&&card(id));
+  const exA=ex.filter(id=>card(id).type==='achievement'),exP=ex.filter(id=>card(id).type==='project'),exO=ex.filter(id=>!exA.includes(id)&&!exP.includes(id));
+  const out=[];L.forEach(id=>{if(id===achEnd)out.push(...exA);if(id===projEnd)out.push(...exP);if(set.has(id)&&card(id))out.push(id)});
+  if(!achEnd)out.push(...exA);if(!projEnd)out.push(...exP);out.push(...exO);return out.concat(arr.filter(id=>!out.includes(id)))}
+function fullAutobioTarget(v){const {L}=canonInfo();const miss=L.filter(id=>card(id)&&!v.sections.autobio.includes(id));return{miss,arr:canonOrder(v.sections.autobio.concat(miss))}}
+function orderPatchNeeded(s){const v=s.versions.find(x=>x.id==='v_full');if(!v||!canonInfo().L.length)return null;const t=fullAutobioTarget(v);return t.arr.join()!==v.sections.autobio.join()?t:null}
+function checkDataUpdate(){const el=$('#notice');el.hidden=true;el.innerHTML='';
+  if((state.dataVersion||1)>=DATA_VERSION)return;
+  const legacy=typeof legacyPatches==='function'?legacyPatches(state):[];const ord=orderPatchNeeded(state);
+  const items=legacy.map(p=>p.text);
+  if(ord)items.push('「完整版」的自傳與預設順序不一致（標題段落後面沒接成果／專案），恢復預設順序'+(ord.miss.length?'並補回 '+ord.miss.length+' 張預設卡片（'+ord.miss.map(id=>card(id).title).join('、')+'）':''));
+  if(!items.length){state.dataVersion=DATA_VERSION;saveNow();return}
+  el.innerHTML='<span>📢 <b>資料更新</b>：'+items.map((t,i)=>(items.length>1?(i+1)+'. ':'')+esc(t)).join('　')+'。只會修改以上項目，你的其他修改、卡片與版本都會保留。</span><span class="nbtns"><button class="pri" id="nApply">套用更新</button><button id="nSkip">略過</button></span>';
+  el.hidden=false;
+  $('#nApply').onclick=()=>{legacy.forEach(p=>p.apply(state));if(ord){const v=state.versions.find(x=>x.id==='v_full');v.sections.autobio=fullAutobioTarget(v).arr}state.dataVersion=DATA_VERSION;saveNow();el.hidden=true;render();toast('已套用更新')};
+  $('#nSkip').onclick=()=>{if(!confirm('略過後不會再提示（之後仍可在 組合器 → 自傳 按「恢復預設順序」）。確定略過？'))return;state.dataVersion=DATA_VERSION;saveNow();el.hidden=true}}
+
+/* ---------- 啟動 ---------- */
+load();render();checkDataUpdate();
+if(!window.Sortable)setTimeout(()=>toast('拖曳套件未載入（離線？），請使用 ↑ ↓ 按鈕排序'),800);
+</script>
+
+<script>
+/* ================= GitHub 雲端同步（Contents API） =================
+   設定與金鑰只存在本瀏覽器 localStorage。資料檔：owner/repo@branch:path（預設 CasioESH311/resume-data@main:resume.json） */
+window.SYNC=(()=>{
+const CFG_KEY='resume-composer-sync-cfg';
+const DEF={owner:'CasioESH311',repo:'resume-data',branch:'main',path:'resume.json',token:''};
+const PUSH_DELAY=4000,POLL_MS=60000,RETRY_MS=30000;
+const UI_ONLY=['currentVersion','savedAt','starter'];
+let cfg=loadCfg(),meta=null,status='local',pushT=null,retryT=null,pushing=false,again=false,conflictRemote=null,remoteNew=null,etag=null,lastErr='',suppress=false;
+class SyncErr extends Error{constructor(kind,msg){super(msg);this.kind=kind}}
+function loadCfg(){try{return Object.assign({},DEF,JSON.parse(localStorage.getItem(CFG_KEY)||'{}'))}catch(e){return Object.assign({},DEF)}}
+function saveCfg(){localStorage.setItem(CFG_KEY,JSON.stringify(cfg))}
+const enabled=()=>!!(cfg.token&&cfg.owner&&cfg.repo&&cfg.path);
+const metaKey=()=>'resume-composer-sync-meta:'+STORE_KEY+':'+[cfg.owner,cfg.repo,cfg.branch,cfg.path].join('/');
+function loadMeta(){try{meta=JSON.parse(localStorage.getItem(metaKey())||'null')}catch(e){meta=null}meta=meta||{sha:null,base:null,syncedAt:null}}
+function saveMeta(){localStorage.setItem(metaKey(),JSON.stringify(meta))}
+const fmt=iso=>{try{return new Date(iso).toLocaleString('zh-TW',{hour12:false})}catch(e){return iso}};
+function payload(s){const o={};Object.keys(s).forEach(k=>{if(!UI_ONLY.includes(k))o[k]=s[k]});return o}
+function cmpStr(s){const o=payload(s);delete o.updatedAt;delete o.updatedBy;return JSON.stringify(o)}
+const pristine=()=>cmpStr(state)===cmpStr(normalize(buildSeed()));
+function dirty(){if(!meta)return false;if(meta.base==null)return !pristine();return cmpStr(state)!==meta.base}
+function b64enc(str){const b=new TextEncoder().encode(str);let s='';for(let i=0;i<b.length;i+=0x8000)s+=String.fromCharCode.apply(null,b.subarray(i,i+0x8000));return btoa(s)}
+function b64dec(b){const bin=atob(b.replace(/\s/g,''));const u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);return new TextDecoder().decode(u)}
+const api=()=>`https://api.github.com/repos/${encodeURIComponent(cfg.owner)}/${encodeURIComponent(cfg.repo)}/contents/${cfg.path.split('/').map(encodeURIComponent).join('/')}`;
+const H=(x)=>Object.assign({'Accept':'application/vnd.github+json','Authorization':'Bearer '+cfg.token,'X-GitHub-Api-Version':'2022-11-28'},x||{});
+async function fetchRemote(useEtag){
+  const r=await fetch(api()+'?ref='+encodeURIComponent(cfg.branch),{headers:H(useEtag&&etag?{'If-None-Match':etag}:null),cache:'no-store'});
+  if(r.status===304)return{unchanged:true};
+  if(r.status===404)return{notFound:true};
+  if(r.status===401)throw new SyncErr('auth','金鑰無效或已過期（401）');
+  if(r.status===403)throw new SyncErr('auth','沒有權限或已達 API 次數上限（403）');
+  if(!r.ok)throw new SyncErr('http','GitHub 回應 '+r.status);
+  const j=await r.json();let text;
+  if(j.content&&j.encoding==='base64')text=b64dec(j.content);
+  else{const r2=await fetch(api()+'?ref='+encodeURIComponent(cfg.branch),{headers:H({'Accept':'application/vnd.github.raw+json'}),cache:'no-store'});if(!r2.ok)throw new SyncErr('http','讀取大型檔案失敗 '+r2.status);text=await r2.text()}
+  let data;try{data=JSON.parse(text)}catch(e){throw new SyncErr('format','雲端 '+cfg.path+' 不是有效的 JSON：'+e.message)}
+  if(!validState(data))throw new SyncErr('format','雲端 '+cfg.path+' 格式不符（需 schema:1 與 profile / cards / versions）');
+  etag=r.headers.get('ETag')||null;
+  return{sha:j.sha,data,text}}
+
+/* ---- 狀態顯示 ---- */
+const ST={local:['','本機模式'],ok:['ok','已同步'],busy:['busy','同步中…'],pending:['busy','待同步'],off:['off','離線草稿'],conflict:['conflict','衝突'],err:['err','同步錯誤'],remote:['busy','雲端有新版本']};
+function setStatus(s){status=s;const el=$('#syncPill');if(!el)return;let [c,t]=ST[s];if(s==='off'&&!dirty())t='離線';el.className='tb-btn sync '+c;$('#syncTxt').textContent='☁ '+t;
+  el.title=s==='local'?'未設定雲端同步：資料只存在這個瀏覽器。點此設定 GitHub 同步':(lastErr&&(s==='err'||s==='off')?lastErr+'\n':'')+(meta&&meta.syncedAt?'上次同步：'+fmt(meta.syncedAt)+'\n':'')+cfg.owner+'/'+cfg.repo+' : '+cfg.path+'\n點此開啟同步設定'}
+function showBar(html,btns){const el=$('#syncBar');el.innerHTML='<span>'+html+'</span><span class="nbtns">'+btns.map((b,i)=>`<button data-i="${i}" class="${b.pri?'pri':''}">${b.t}</button>`).join('')+'</span>';el.hidden=false;
+  el.querySelectorAll('button').forEach(b=>b.onclick=()=>btns[+b.dataset.i].f())}
+function hideBar(){const el=$('#syncBar');el.hidden=true;el.innerHTML=''}
+function handleErr(e){console.warn('[sync]',e);
+  if(e instanceof SyncErr){lastErr=e.message;setStatus('err');if(e.kind==='format')showBar('⚠ '+esc(e.message)+'。已暫停讀取雲端，本機資料不受影響。',[{t:'重試',f:()=>{hideBar();connect()}},{t:'同步設定',f:openSettings}]);return}
+  lastErr='無法連線 GitHub（'+(e.message||e)+'），修改已存在本機，恢復連線後會自動同步';setStatus('off');
+  clearTimeout(retryT);retryT=setTimeout(()=>{if(status==='off')connect()},RETRY_MS)}
+
+/* ---- 讀取 / 套用 ---- */
+function adopt(r,msg){const cur=state&&state.currentVersion;const s=normalize(r.data);if(cur&&s.versions.some(v=>v.id===cur))s.currentVersion=cur;
+  state=s;meta.sha=r.sha;meta.base=cmpStr(state);meta.syncedAt=new Date().toISOString();saveMeta();remoteNew=null;conflictRemote=null;
+  suppress=true;saveNow();suppress=false;ui.openJobs={};hideBar();render();setStatus('ok');checkDataUpdate();if(msg)toast(msg)}
+async function connect(){if(!enabled()){setStatus('local');return}
+  loadMeta();etag=null;setStatus('busy');lastErr='';
+  try{const rem=await fetchRemote(false);
+    if(rem.notFound){meta.sha=null;saveMeta();
+      if(pristine()&&!SEED_HAS_DATA){lastErr='雲端找不到 '+cfg.path+'，本機也沒有資料可上傳';setStatus('err');showBar('⚠ 在 '+esc(cfg.owner+'/'+cfg.repo)+' 找不到 '+esc(cfg.path)+'。請確認同步設定，或先匯入備份再上傳。',[{t:'同步設定',f:openSettings}]);return}
+      setStatus('pending');showBar('☁ 雲端 '+esc(cfg.owner+'/'+cfg.repo)+' 還沒有 '+esc(cfg.path)+'，要把目前這份資料上傳建立嗎？',[{t:'上傳建立',pri:true,f:()=>{hideBar();push(true)}},{t:'稍後',f:hideBar}]);return}
+    if(cmpStr(rem.data)===cmpStr(state)){meta.sha=rem.sha;meta.base=cmpStr(state);meta.syncedAt=new Date().toISOString();saveMeta();hideBar();setStatus('ok');return}
+    if(meta.sha===rem.sha){if(dirty())return push();setStatus('ok');return}
+    if(!dirty())return adopt(rem,meta.sha?'已載入雲端最新版本':'已從雲端載入履歷資料');
+    showConflict(rem)}catch(e){handleErr(e)}}
+async function checkRemote(){if(!enabled()||!meta||pushing||status==='conflict'||status==='busy'||document.hidden)return;
+  try{const rem=await fetchRemote(true);if(rem.unchanged||rem.notFound)return;
+    if(rem.sha===meta.sha){if(status==='off'||status==='err')setStatus(dirty()?'pending':'ok');return}
+    if(cmpStr(rem.data)===cmpStr(state)){meta.sha=rem.sha;meta.base=cmpStr(state);saveMeta();setStatus('ok');return}
+    if(dirty())return showConflict(rem);
+    if(!meta.sha)return adopt(rem,'已從雲端載入履歷資料');
+    remoteNew=rem;setStatus('remote');const d=rem.data;
+    showBar('☁ <b>雲端有新版本</b>'+(d.updatedBy||d.updatedAt?'（'+esc([d.updatedBy,d.updatedAt&&fmt(d.updatedAt)].filter(Boolean).join('，'))+'）':'')+'：其他裝置或機器人更新了履歷資料。',[{t:'重新載入',pri:true,f:()=>adopt(remoteNew,'已載入雲端最新版本')},{t:'稍後',f:hideBar}])}
+  catch(e){handleErr(e)}}
+
+/* ---- 寫入 ---- */
+function onLocalSave(){if(suppress||!enabled()||!meta)return;
+  if(status==='conflict')return; // 衝突處理前暫停上傳
+  if(remoteNew&&dirty())return showConflict(remoteNew);
+  if(dirty()){setStatus(navigator.onLine===false?'off':'pending');clearTimeout(pushT);pushT=setTimeout(push,PUSH_DELAY)}
+  else if(status==='pending')setStatus('ok')}
+function commitMsg(){let old=null;try{old=meta.base?JSON.parse(meta.base):null}catch(e){}
+  if(!old)return'履歷資料：從網頁上傳完整資料';
+  const om=new Map(old.cards.map(c=>[c.id,c])),nm=new Map(state.cards.map(c=>[c.id,c]));const parts=[];
+  const nameOf=c=>(c.title||String(c.content||'').slice(0,16)||c.id);
+  const L=(verb,arr)=>{if(arr.length)parts.push(verb+arr.slice(0,3).map(c=>'「'+nameOf(c)+'」').join('')+(arr.length>3?'等 '+arr.length+' 張卡片':''))};
+  L('新增',state.cards.filter(c=>!om.has(c.id)));L('編輯',state.cards.filter(c=>om.has(c.id)&&JSON.stringify(om.get(c.id))!==JSON.stringify(c)));L('刪除',old.cards.filter(c=>!nm.has(c.id)));
+  const ov=new Map(old.versions.map(v=>[v.id,v]));const vch=state.versions.filter(v=>JSON.stringify(ov.get(v.id))!==JSON.stringify(v));const vdel=old.versions.filter(v=>!state.versions.some(x=>x.id===v.id));
+  if(vch.length)parts.push((vch.some(v=>!ov.has(v.id))?'新增／更新版本':'更新版本')+vch.slice(0,3).map(v=>'「'+v.name+'」').join(''));if(vdel.length)parts.push('刪除版本'+vdel.map(v=>'「'+v.name+'」').join(''));
+  if(JSON.stringify(old.profile)!==JSON.stringify(state.profile))parts.push('修改基本資料');
+  if(!parts.length)parts.push('調整資料');
+  return'履歷：'+parts.join('；')+'（網頁）'}
+async function push(force){clearTimeout(pushT);pushT=null;if(!enabled()||!meta)return;
+  if(pushing){again=true;return}
+  if(status==='conflict'&&!force)return;
+  if(!dirty()&&!force){setStatus('ok');return}
+  pushing=true;setStatus('busy');
+  const now=new Date().toISOString();const snap=payload(state);snap.updatedAt=now;snap.updatedBy='resume-builder（網頁）';
+  const text=JSON.stringify(snap,null,2)+'\n',sent=cmpStr(snap),message=commitMsg();
+  try{const body={message,content:b64enc(text),branch:cfg.branch};if(meta.sha)body.sha=meta.sha;
+    const r=await fetch(api(),{method:'PUT',headers:H({'Content-Type':'application/json'}),body:JSON.stringify(body),cache:'no-store'});
+    if(r.ok){const j=await r.json();meta.sha=j.content.sha;meta.base=sent;meta.syncedAt=now;meta.lastCommit=j.commit&&j.commit.html_url;meta.lastMessage=message;saveMeta();etag=null;lastErr='';
+      state.updatedAt=now;state.updatedBy=snap.updatedBy;suppress=true;saveNow();suppress=false;hideBar();
+      if(dirty()){setStatus('pending');pushT=setTimeout(push,1500)}else setStatus('ok')}
+    else if(r.status===409||r.status===422){const rem=await fetchRemote(false);
+      if(rem.notFound){meta.sha=null;saveMeta();pushing=false;return push(true)}
+      if(cmpStr(rem.data)===cmpStr(state)){meta.sha=rem.sha;meta.base=cmpStr(state);saveMeta();setStatus('ok')}
+      else showConflict(rem)}
+    else if(r.status===401||r.status===403||r.status===404){lastErr=r.status===401?'金鑰無效或已過期（401）':r.status===403?'金鑰沒有寫入權限（403），請確認 Contents: Read and write':'找不到 repo 或金鑰沒有此 repo 的權限（404）';setStatus('err')}
+    else throw new SyncErr('http','GitHub 回應 '+r.status)}
+  catch(e){handleErr(e)}
+  finally{pushing=false;if(again){again=false;if(status!=='conflict'&&dirty())pushT=setTimeout(push,500)}}}
+
+/* ---- 衝突 ---- */
+function showConflict(rem){conflictRemote=rem;remoteNew=null;clearTimeout(pushT);setStatus('conflict');hideBar();
+  const d=$('#conflictDlg'),rd=rem.data;const who=[rd.updatedBy,rd.updatedAt&&fmt(rd.updatedAt)].filter(Boolean).join('，');
+  d.innerHTML=`<div class="dlg"><h3>⚠ 雲端資料已被更新</h3><p style="margin:6px 0">在你編輯的同時，GitHub 上的 <b>${esc(cfg.path)}</b> 已被其他裝置或機器人更新${who?'（'+esc(who)+'）':''}，而這個瀏覽器也有尚未同步的修改。為避免資料遺失，不會自動覆蓋任何一方，請選擇：</p>
+  <div class="cbox">☁ <b>雲端版本</b>：${rd.cards.length} 張卡片、${rd.versions.length} 個版本<br>💻 <b>我的版本</b>：${state.cards.length} 張卡片、${state.versions.length} 個版本（${esc(commitMsg().replace(/^履歷：|（網頁）$/g,''))}）</div>
+  <div class="acts"><button id="cfExport" class="l">⬇ 先匯出備份</button><button id="cfRemote">保留雲端版本</button><button id="cfMine" class="pri">用我的版本覆蓋</button></div>
+  <p class="hint">・保留雲端版本：載入雲端最新資料，本機未同步的修改會先另存在此瀏覽器（並建議先匯出備份）。<br>・用我的版本覆蓋：以你的資料取代雲端（雲端那一版仍保留在 GitHub 歷史紀錄）。<br>・按 Esc 關閉＝稍後再決定，期間暫停上傳（右上角「☁ 衝突」可再開啟）。</p></div>`;
+  d.querySelector('#cfExport').onclick=()=>exportJSON();
+  d.querySelector('#cfRemote').onclick=()=>{if(!confirm('確定載入雲端版本？本機未同步的修改將被取代（已另存一份在此瀏覽器，建議先匯出備份）。'))return;
+    try{localStorage.setItem('resume-composer-conflict-backup',JSON.stringify({savedAt:new Date().toISOString(),state}))}catch(e){}
+    d.close();adopt(rem,'已載入雲端版本（本機修改已另存備份）')};
+  d.querySelector('#cfMine').onclick=()=>{d.close();meta.sha=rem.sha;saveMeta();conflictRemote=null;setStatus('pending');push(true)};
+  if(!d.open)d.showModal()}
+
+/* ---- 設定視窗 ---- */
+function openSettings(){if(status==='conflict'&&conflictRemote)return showConflict(conflictRemote);
+  const d=$('#syncDlg');const has=!!cfg.token;
+  const st=!enabled()?'<div class="st">目前為「本機模式」：資料只存在這個瀏覽器。</div>':`<div class="st ${status==='ok'?'ok':status==='err'?'err':''}">狀態：${ST[status][1]}${lastErr&&(status==='err'||status==='off')?'｜'+esc(lastErr):''}${meta&&meta.syncedAt?'<br>上次同步：'+esc(fmt(meta.syncedAt)):''}${meta&&meta.lastMessage?'<br>上次提交：'+esc(meta.lastMessage):''}</div>`;
+  d.innerHTML=`<div class="dlg"><h3>☁ 雲端同步設定（GitHub）</h3><div class="hint">資料存放在 GitHub 私有 repo 的 JSON 檔。開啟網頁時自動載入最新版；修改後約 4 秒自動提交。金鑰只儲存在這個瀏覽器。</div>
+  <div class="row"><div><label>擁有者（owner）</label><input id="sgOwner" value="${esc(cfg.owner)}"></div><div><label>Repo</label><input id="sgRepo" value="${esc(cfg.repo)}"></div></div>
+  <div class="row"><div><label>分支（branch）</label><input id="sgBranch" value="${esc(cfg.branch)}"></div><div><label>檔案路徑</label><input id="sgPath" value="${esc(cfg.path)}"></div></div>
+  <label>Fine-grained Personal Access Token（Contents: Read and write）</label><input id="sgToken" type="password" autocomplete="off" placeholder="${has?'已儲存（結尾 '+esc(cfg.token.slice(-4))+'），留空＝沿用':'github_pat_…'}">
+  <div class="hint">建立金鑰：<a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">github.com/settings/personal-access-tokens/new</a> → Repository access 只選 ${esc(cfg.owner)}/${esc(cfg.repo)} → Permissions：Contents = Read and write。</div>
+  ${st}<div class="st" id="sgMsg" hidden></div>
+  <div class="acts"><button id="sgClear" class="danger l" ${has?'':'disabled'}>清除金鑰</button><button id="sgTest">測試連線</button>${enabled()?'<button id="sgNow">立即同步</button>':''}<button id="sgClose">關閉</button><button id="sgSave" class="pri">儲存並連線</button></div>
+  ${enabled()?`<div class="hint" style="margin-top:8px"><a href="https://github.com/${encodeURIComponent(cfg.owner)}/${encodeURIComponent(cfg.repo)}/commits/${encodeURIComponent(cfg.branch)}/${esc(cfg.path)}" target="_blank" rel="noopener">在 GitHub 查看修改歷史 ↗</a></div>`:''}</div>`;
+  const val=()=>({owner:d.querySelector('#sgOwner').value.trim(),repo:d.querySelector('#sgRepo').value.trim(),branch:d.querySelector('#sgBranch').value.trim()||'main',path:d.querySelector('#sgPath').value.trim().replace(/^\/+/,'')||'resume.json',token:d.querySelector('#sgToken').value.trim()||cfg.token});
+  const msg=(t,c)=>{const m=d.querySelector('#sgMsg');m.hidden=false;m.className='st '+(c||'');m.innerHTML=t};
+  d.querySelector('#sgTest').onclick=async()=>{const old=cfg;cfg=val();msg('連線中…');try{const r=await fetchRemote(false);msg(r.notFound?'⚠ 連線成功，但找不到 '+esc(cfg.path)+'（儲存後可上傳建立）':'✔ 連線成功：'+r.data.cards.length+' 張卡片、'+r.data.versions.length+' 個版本'+(r.data.updatedAt?'，最後更新 '+esc(fmt(r.data.updatedAt)):''),r.notFound?'':'ok')}catch(e){msg('✖ '+esc(e.message||e),'err')}finally{cfg=old}};
+  d.querySelector('#sgSave').onclick=()=>{const v=val();if(!v.token){msg('請輸入金鑰','err');return}cfg=v;saveCfg();d.close();toast('已儲存同步設定');connect()};
+  d.querySelector('#sgClose').onclick=()=>d.close();
+  const now=d.querySelector('#sgNow');if(now)now.onclick=()=>{d.close();syncNow()};
+  d.querySelector('#sgClear').onclick=()=>{if(!confirm('清除這個瀏覽器儲存的 GitHub 金鑰？\n（資料仍保留在本機與 GitHub，之後可重新輸入金鑰）'))return;cfg.token='';saveCfg();clearTimeout(pushT);hideBar();lastErr='';setStatus('local');d.close();toast('已清除金鑰，改為本機模式')};
+  if(!d.open)d.showModal()}
+async function syncNow(){if(!enabled())return openSettings();if(status==='conflict'&&conflictRemote)return showConflict(conflictRemote);
+  if(meta&&dirty()&&meta.sha!=null)return push();return connect()}
+
+/* ---- 啟動 ---- */
+function start(){
+  window.addEventListener('focus',()=>checkRemote());
+  document.addEventListener('visibilitychange',()=>{if(document.hidden){if(pushT)push()}else checkRemote()});
+  window.addEventListener('online',()=>{if(enabled())connect()});
+  setInterval(checkRemote,POLL_MS);
+  if(!enabled()){setStatus('local');
+    if(!SEED_HAS_DATA&&pristine())showBar('👋 這是公開版的空白範本（不內嵌任何個人資料）。請按「同步設定」輸入 GitHub 金鑰載入你的雲端履歷，或「匯入備份」載入 JSON 檔。',[{t:'同步設定',pri:true,f:openSettings},{t:'匯入備份',f:()=>$('#importFile').click()}]);
+    return}
+  connect()}
+return{start,enabled,onLocalSave,openSettings,syncNow,connect,checkRemote,_dbg:()=>({status,meta,cfg:Object.assign({},cfg,{token:cfg.token?'***':''}),dirty:dirty(),lastErr})};
+})();
+SYNC.start();
+</script>
+</body>
+</html>

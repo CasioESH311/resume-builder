@@ -11,6 +11,12 @@
 
 使用：<https://casioesh311.github.io/resume-builder/> → 右上角「☁」→ 輸入 owner / repo / branch / 路徑與金鑰（建立：<https://github.com/settings/personal-access-tokens/new>）。
 
+## 🎤 語音模擬面試（interview.html）
+
+<https://casioesh311.github.io/resume-builder/interview.html>
+
+這個頁面用 Google Gemini 免費 API 扮演三位科技業 EHS 面試官（HR 主管、職安主管、資深職安經理），以繁體中文語音進行模擬面試。面試結束後會產生評估報告，可下載成 .md 檔；也可以按按鈕，選擇存到私有 repo 的 `interviews/` 資料夾。Gemini 金鑰（到 <https://aistudio.google.com/apikey> 免費取得）只會存在瀏覽器的 localStorage。語音辨識建議使用電腦版 Chrome 或 Edge。
+
 ---
 
 Single-file résumé composer (Traditional Chinese UI). It contains no personal data. Data lives in a private GitHub repo and syncs through the Contents API, authenticated with a fine-grained PAT that is stored only in the browser's localStorage.

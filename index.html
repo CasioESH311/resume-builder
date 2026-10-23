@@ -233,6 +233,7 @@ dialog::backdrop{background:rgba(15,23,42,.55)}
   </div>
   <div class="spacer"></div>
   <div class="saved" id="saved"><span class="dot"></span><span id="savedTxt">已載入</span></div>
+  <a class="tb-btn" id="ivLink" href="interview.html" target="_blank" rel="noopener" style="text-decoration:none" title="用 Gemini 語音模擬科技業 EHS 面試">🎤 模擬面試</a>
   <button class="tb-btn sync" id="syncPill" data-act="syncOpen" title="雲端同步設定與狀態"><span class="dot"></span><span id="syncTxt">本機模式</span></button>
   <button class="tb-btn" data-act="export" title="下載 JSON 備份檔">⬇ 匯出備份</button>
   <button class="tb-btn" data-act="import" title="從 JSON 備份檔還原">⬆ 匯入備份</button>
@@ -867,6 +868,7 @@ function start(){
 return{start,enabled,onLocalSave,openSettings,syncNow,connect,checkRemote,_dbg:()=>({status,meta,cfg:Object.assign({},cfg,{token:cfg.token?'***':''}),dirty:dirty(),lastErr})};
 })();
 SYNC.start();
+(function(){var a=document.getElementById("ivLink");if(a&&location.protocol==="file:")a.href="https://casioesh311.github.io/resume-builder/interview.html";})();
 </script>
 </body>
 </html>

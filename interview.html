@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🎤 語音模擬面試｜科技業 EHS（Gemini）</title>
+<style>
+:root{--bg:#0f172a;--panel:#ffffff;--ink:#0f172a;--muted:#64748b;--line:#e2e8f0;--accent:#2563eb;--soft:#f1f5f9;--ok:#16a34a;--warn:#d97706;--err:#dc2626}
+*{box-sizing:border-box}
+html,body{margin:0;background:#f1f5f9;color:var(--ink);font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;font-size:15px;line-height:1.55}
+button,input,select,textarea{font:inherit}
+button{cursor:pointer}
+a{color:var(--accent)}
+.top{position:sticky;top:0;z-index:20;background:var(--bg);color:#e2e8f0;display:flex;align-items:center;gap:8px;padding:8px 14px;flex-wrap:wrap}
+.top h1{font-size:16px;margin:0 8px 0 0;white-space:nowrap}
+.top .sp{flex:1}
+.tb{border:1px solid #334155;background:#1e293b;color:#e2e8f0;padding:6px 11px;border-radius:7px;font-size:13px;text-decoration:none;display:inline-flex;align-items:center;gap:4px}
+.tb:hover{background:#334155}
+.pill{font-size:12px;padding:3px 9px;border-radius:99px;background:#334155;color:#cbd5e1}
+.pill.ok{background:#14532d;color:#bbf7d0}.pill.warn{background:#78350f;color:#fde68a}
+main{max-width:1100px;margin:0 auto;padding:14px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:14px;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+.card h2{font-size:16px;margin:0 0 10px}
+.card h3{font-size:14px;margin:14px 0 6px;color:#334155}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+label.f{display:block;font-size:13px;color:#334155;margin:8px 0 3px;font-weight:600}
+input[type=text],input[type=password],input[type=number],select,textarea{width:100%;border:1px solid #cbd5e1;border-radius:8px;padding:7px 9px;background:#fff;color:var(--ink)}
+textarea{resize:vertical;min-height:70px}
+.hint{font-size:12.5px;color:var(--muted);margin:4px 0}
+.btn{border:1px solid #cbd5e1;background:#fff;color:#0f172a;border-radius:8px;padding:7px 13px;font-size:14px}
+.btn:hover{background:#f8fafc}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.pri:hover{background:#1d4ed8}
+.btn.big{font-size:17px;padding:11px 26px;border-radius:10px}
+.btn.danger{color:var(--err);border-color:#fecaca}
+.btn.sm{font-size:12.5px;padding:4px 9px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.chk{display:inline-flex;align-items:center;gap:6px;margin-right:14px;font-size:14px}
+.alert{border-radius:9px;padding:9px 12px;margin:8px 0;font-size:14px}
+.alert.warn{background:#fffbeb;border:1px solid #fde68a;color:#92400e}
+.alert.err{background:#fef2f2;border:1px solid #fecaca;color:#991b1b}
+.alert.info{background:#eff6ff;border:1px solid #bfdbfe;color:#1e3a8a}
+.alert.ok{background:#f0fdf4;border:1px solid #bbf7d0;color:#166534}
+.hidden{display:none!important}
+/* panel */
+.panel{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:12px}
+.iv{background:#fff;border:2px solid var(--line);border-radius:12px;padding:10px;display:flex;gap:10px;align-items:center;transition:all .2s;position:relative}
+.iv.off{opacity:.35}
+.iv.speaking{border-color:var(--c);box-shadow:0 0 0 4px color-mix(in srgb,var(--c) 25%,transparent);transform:translateY(-2px)}
+.iv.thinking{border-style:dashed;border-color:var(--c)}
+.av{width:46px;height:46px;flex:none;background:var(--c);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px}
+.av.hex{clip-path:polygon(25% 4%,75% 4%,100% 50%,75% 96%,25% 96%,0 50%)}
+.av.star{clip-path:polygon(50% 0,63% 32%,98% 35%,71% 57%,80% 92%,50% 73%,20% 92%,29% 57%,2% 35%,37% 32%);font-size:11px}
+.av.clover{border-radius:42% 58% 45% 55%/50% 45% 55% 50%}
+.av.circle{border-radius:50%}
+.av.square{border-radius:10px}
+.iv .nm{font-weight:700;font-size:14px;line-height:1.3}
+.iv .tt{font-size:12px;color:var(--muted)}
+.iv .wave{position:absolute;right:8px;top:8px;display:none;gap:2px;align-items:flex-end;height:14px}
+.iv.speaking .wave{display:flex}
+.wave i{display:block;width:3px;background:var(--c);animation:wv .8s infinite ease-in-out}
+.wave i:nth-child(2){animation-delay:.15s}.wave i:nth-child(3){animation-delay:.3s}
+@keyframes wv{0%,100%{height:4px}50%{height:14px}}
+.bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+.timer{font-variant-numeric:tabular-nums;font-weight:700;font-size:18px}
+.prog{flex:1;min-width:120px;height:6px;background:#e2e8f0;border-radius:4px;overflow:hidden}
+.prog>div{height:100%;background:var(--accent);width:0;transition:width 1s}
+.chat{background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px;height:min(52vh,520px);overflow-y:auto;scroll-behavior:smooth}
+.msg{display:flex;gap:8px;margin:10px 0;align-items:flex-start}
+.msg .av{width:30px;height:30px;font-size:10px}
+.msg .bub{max-width:100%;width:max-content;padding:8px 12px;border-radius:12px;background:var(--soft);white-space:pre-wrap;word-break:break-word}
+.msg .who{font-size:11.5px;color:var(--muted);margin-bottom:2px}
+.msg>div{max-width:78%;min-width:0}.msg.me>div{display:flex;flex-direction:column;align-items:flex-end}
+.msg.me{flex-direction:row-reverse}
+.msg.me .bub{background:#dbeafe}
+.msg .note{font-size:11.5px;color:#94a3b8;margin-top:3px}
+.msg.sys .bub{background:#fff7ed;color:#9a3412;font-size:13px}
+.live{min-height:44px;margin:8px 0;padding:8px 12px;border-radius:10px;background:#f8fafc;border:1px dashed #cbd5e1;color:#334155}
+.live .itm{color:#94a3b8}
+.ctrl{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:8px}
+.mic{width:76px;height:76px;border-radius:50%;border:none;background:var(--accent);color:#fff;font-size:30px;box-shadow:0 4px 14px rgba(37,99,235,.35);touch-action:none;user-select:none;-webkit-user-select:none;flex:none}
+.mic.rec{background:var(--err);animation:pulse 1.2s infinite}
+.mic:disabled{background:#94a3b8;box-shadow:none}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(220,38,38,.5)}70%{box-shadow:0 0 0 16px rgba(220,38,38,0)}100%{box-shadow:0 0 0 0 rgba(220,38,38,0)}}
+.txtin{flex:1;min-width:200px;display:flex;gap:6px}
+.txtin textarea{min-height:44px;height:44px}
+.status{font-size:13px;color:var(--muted)}
+/* report */
+.md h1{font-size:20px;margin:6px 0 10px}.md h2{font-size:17px;margin:18px 0 8px;border-bottom:1px solid var(--line);padding-bottom:4px}.md h3{font-size:15px;margin:14px 0 6px}
+.md table{border-collapse:collapse;width:100%;margin:8px 0;font-size:14px}.md th,.md td{border:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}.md th{background:var(--soft)}
+.md blockquote{margin:8px 0;padding:6px 12px;border-left:4px solid #93c5fd;background:#eff6ff;color:#1e3a8a}
+.md ul,.md ol{padding-left:22px}.md li{margin:3px 0}
+.md code{background:var(--soft);padding:1px 4px;border-radius:4px}
+/* dialog */
+dialog{border:none;border-radius:14px;padding:0;width:min(860px,96vw);max-height:92vh;box-shadow:0 20px 60px rgba(0,0,0,.35)}
+dialog::backdrop{background:rgba(15,23,42,.55)}
+.dlg-h{position:sticky;top:0;background:#fff;border-bottom:1px solid var(--line);padding:12px 16px;display:flex;align-items:center;gap:8px;z-index:2}
+.dlg-h h2{margin:0;font-size:17px;flex:1}
+.dlg-b{padding:12px 16px 18px}
+.pcard{border:1px solid var(--line);border-left:5px solid var(--c);border-radius:10px;padding:10px 12px;margin:10px 0}
+.pcard .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:#0f172a;color:#fff;padding:9px 16px;border-radius:9px;z-index:99;font-size:14px;max-width:92vw;box-shadow:0 6px 20px rgba(0,0,0,.3)}
+@media (max-width:720px){
+  .grid2,.pcard .grid3{grid-template-columns:1fr}
+  main{padding:8px}
+  .panel{grid-template-columns:repeat(3,1fr);gap:6px}
+  .iv{flex-direction:column;text-align:center;padding:8px 4px;gap:4px}
+  .iv .tt{display:none}.iv .nm{font-size:12px}
+  .chat{height:46vh}
+  .msg>div{max-width:88%}
+  .top h1{font-size:14px}
+  .mic{width:68px;height:68px}
+}
+</style>
+</head>
+<body>
+<div class="top">
+  <h1>🎤 語音模擬面試｜科技業 EHS</h1>
+  <span class="pill" id="keyPill">未設定 Gemini 金鑰</span>
+  <span class="pill" id="modelPill"></span>
+  <span class="sp"></span>
+  <a class="tb" href="index.html" id="backLink">📄 履歷組合器</a>
+  <button class="tb" data-act="openSettings">⚙ 設定</button>
+</div>
+<main>
+  <div id="globalAlerts"></div>
+
+  <!-- ============ SETUP ============ -->
+  <section id="vSetup">
+    <div id="resumeBanner"></div>
+    <div class="card">
+      <h2>① 應徵職缺</h2>
+      <div class="grid2">
+        <div><label class="f" for="fCompany">公司名稱</label><input type="text" id="fCompany" placeholder="例如：某半導體公司"></div>
+        <div><label class="f" for="fTitle">應徵職稱</label><input type="text" id="fTitle" placeholder="例如：EHS 工程師／職安衛管理師"></div>
+      </div>
+      <label class="f" for="fJD">職缺內容（貼上 104／公司官網的工作內容與條件，選填但強烈建議）</label>
+      <textarea id="fJD" rows="5" placeholder="工作內容、需求條件、加分條件…"></textarea>
+    </div>
+
+    <div class="card">
+      <h2>② 面試設定</h2>
+      <div class="grid2">
+        <div>
+          <label class="f">面試模式</label>
+          <label class="chk"><input type="radio" name="mode" value="normal" checked> 一般面試</label>
+          <label class="chk"><input type="radio" name="mode" value="stress"> 壓力面試</label>
+          <div class="hint">壓力面試：面試官較尖銳、會質疑與連續追問，但不會人身攻擊。</div>
+        </div>
+        <div>
+          <label class="f" for="fLen">面試長度</label>
+          <select id="fLen">
+            <option value="t10">約 10 分鐘</option>
+            <option value="t20" selected>約 20 分鐘</option>
+            <option value="t30">約 30 分鐘</option>
+            <option value="q5">約 5 題主要問題</option>
+            <option value="q8">約 8 題主要問題</option>
+            <option value="q12">約 12 題主要問題</option>
+          </select>
+        </div>
+      </div>
+      <label class="f">參與的面試官（可在 ⚙ 設定中修改人設、聲音）</label>
+      <div id="partList"></div>
+      <h3>語音</h3>
+      <label class="chk"><input type="checkbox" id="fHands" checked> 免持模式（面試官講完自動開始聽，停頓後自動送出）</label>
+      <label class="chk">停頓 <input type="number" id="fSilence" min="1" max="8" step="0.5" value="2" style="width:64px"> 秒送出</label>
+      <label class="chk"><input type="checkbox" id="fTTS" checked> 面試官朗讀（語音合成）</label>
+      <label class="chk"><input type="checkbox" id="fBarge"> 允許插話（面試官說話時也收音；建議戴耳機，避免把喇叭聲音辨識進去）</label>
+    </div>
+
+    <div class="card">
+      <h2>③ 應徵者背景（給面試官看的履歷）</h2>
+      <div class="row">
+        <label class="chk"><input type="radio" name="bgsrc" value="github" checked> GitHub 雲端 resume.json</label>
+        <label class="chk"><input type="radio" name="bgsrc" value="local"> 本瀏覽器的履歷組合器資料</label>
+        <label class="chk"><input type="radio" name="bgsrc" value="manual"> 自行貼上</label>
+      </div>
+      <div id="bgGh" class="hint"></div>
+      <div class="row" style="margin-top:6px">
+        <button class="btn" data-act="loadResume">⟳ 載入履歷</button>
+        <label class="chk">版本 <select id="fVer" style="width:auto;min-width:160px"><option value="">（請先載入）</option></select></label>
+        <label class="chk"><input type="checkbox" id="fFields"> 附上基本資料欄位（不含電話、Email、地址）</label>
+      </div>
+      <label class="f" for="fBg">背景文字（可直接修改；只會送給 Gemini 當面試參考）</label>
+      <textarea id="fBg" rows="8" placeholder="載入履歷，或直接貼上你的履歷／經歷摘要…"></textarea>
+      <div class="hint" id="bgInfo"></div>
+    </div>
+
+    <div class="card" style="text-align:center">
+      <div id="startWarn"></div>
+      <button class="btn pri big" data-act="start">▶ 開始面試</button>
+      <div class="hint" style="margin-top:6px">開始後瀏覽器會要求麥克風權限，請選「允許」。也可以全程用鍵盤打字作答。</div>
+      <div id="lastSession"></div>
+    </div>
+  </section>
+
+  <!-- ============ INTERVIEW ============ -->
+  <section id="vRun" class="hidden">
+    <div class="panel" id="panel"></div>
+    <div class="bar">
+      <span class="timer" id="timer">00:00</span>
+      <span class="status" id="target"></span>
+      <div class="prog"><div id="progBar"></div></div>
+      <button class="btn danger" data-act="end">■ 結束面試</button>
+    </div>
+    <div class="chat" id="chat"></div>
+    <div id="runAlert"></div>
+    <div class="live" id="live"><span class="itm">（你的語音辨識文字會即時顯示在這裡）</span></div>
+    <div class="ctrl">
+      <button class="mic" id="mic" title="按住說話，放開送出；或點一下開始、再點一下送出">🎙</button>
+      <div style="flex:none">
+        <label class="chk" style="margin:0"><input type="checkbox" id="rHands"> 免持</label><br>
+        <span class="status" id="micStatus">待命</span>
+      </div>
+      <div class="txtin">
+        <textarea id="txt" placeholder="或打字作答（Enter 送出，Shift+Enter 換行）"></textarea>
+        <button class="btn pri" data-act="sendText">送出</button>
+      </div>
+    </div>
+    <div class="ctrl">
+      <button class="btn sm" data-act="replay">🔁 重播上一句</button>
+      <button class="btn sm" data-act="stopTTS">🔇 停止朗讀</button>
+      <button class="btn sm" data-act="repeatQ">🙋 請再說一次</button>
+      <button class="btn sm" data-act="skipQ">⏭ 換一題</button>
+      <span class="status">電腦版可按住 <b>空白鍵</b> 說話</span>
+    </div>
+  </section>
+
+  <!-- ============ REPORT ============ -->
+  <section id="vReport" class="hidden">
+    <div class="card">
+      <div class="row" style="justify-content:space-between">
+        <h2 style="margin:0">📋 面試評估報告</h2>
+        <div class="row">
+          <button class="btn" data-act="downloadMd">⬇ 下載 .md（逐字稿＋報告）</button>
+          <button class="btn" data-act="saveGh">☁ 存到 GitHub 私有 repo</button>
+          <button class="btn" data-act="regenReport">⟳ 重新產生報告</button>
+          <button class="btn pri" data-act="restart">↺ 再練一次</button>
+        </div>
+      </div>
+      <div id="repAlert"></div>
+      <div class="md" id="report"></div>
+    </div>
+    <div class="card">
+      <h2>🗒 逐字稿</h2>
+      <div class="chat" id="chat2" style="height:auto;max-height:none"></div>
+    </div>
+  </section>
+</main>
+
+<!-- ============ SETTINGS ============ -->
+<dialog id="dlg">
+  <div class="dlg-h"><h2>⚙ 設定</h2><button class="btn" data-act="closeSettings">完成</button></div>
+  <div class="dlg-b">
+    <div class="card">
+      <h2>Gemini API 金鑰（免費）</h2>
+      <ol class="hint" style="font-size:13.5px;color:#334155">
+        <li>用 Google 帳號開啟 <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">https://aistudio.google.com/apikey</a></li>
+        <li>按「Create API key／建立 API 金鑰」（第一次會自動建立專案），複製以 <code>AIza</code> 開頭的金鑰</li>
+        <li>貼到下面並按「儲存」。金鑰只存在<b>這台電腦這個瀏覽器</b>的 localStorage，不會上傳到 GitHub；只會直接送到 Google 的 API。</li>
+      </ol>
+      <div class="row">
+        <input type="password" id="sKey" placeholder="AIza…" autocomplete="off" style="flex:1;min-width:220px">
+        <button class="btn" data-act="toggleKey">👁</button>
+        <button class="btn pri" data-act="saveKey">儲存</button>
+        <button class="btn" data-act="testKey">測試</button>
+        <button class="btn danger" data-act="clearKey">清除金鑰</button>
+      </div>
+      <div id="keyMsg"></div>
+      <div class="hint">⚠ 免費方案的對話內容可能被 Google 用於改進產品；請勿輸入不想被保存的機密資料。</div>
+      <label class="f" for="sModel">模型</label>
+      <div class="row">
+        <select id="sModel" style="flex:1;min-width:220px"></select>
+        <button class="btn" data-act="listModels">載入我的可用模型</button>
+      </div>
+      <input type="text" id="sModelCustom" class="hidden" placeholder="自訂模型名稱，例如 gemini-3.8-flash" style="margin-top:6px">
+      <div class="hint">預設 gemini-3.8-flash（目前最新的 Flash，免費方案可用）。如果常遇到額度不足或想要反應更快，改用 gemini-3.5-flash-lite。</div>
+      <label class="chk" style="margin-top:6px"><input type="checkbox" id="sStream" checked> 串流顯示（文字邊產生邊出現）</label>
+    </div>
+
+    <div class="card">
+      <h2>GitHub（讀取履歷、儲存面試紀錄）</h2>
+      <div id="ghInfo" class="hint"></div>
+      <div class="hint">這裡直接沿用「履歷組合器」的雲端同步設定（同一網站的 localStorage）。要設定或清除金鑰，請到 <a href="index.html" target="_blank" rel="noopener">履歷組合器</a> 按右上角同步按鈕。</div>
+    </div>
+
+    <div class="card">
+      <div class="row" style="justify-content:space-between"><h2 style="margin:0">面試官人設與聲音</h2>
+        <div class="row"><button class="btn sm" data-act="addPersona">＋ 新增面試官</button><button class="btn sm danger" data-act="resetPersonas">↺ 還原預設人設</button></div></div>
+      <div class="hint" id="voiceInfo"></div>
+      <div id="pList"></div>
+    </div>
+  </div>
+</dialog>
+<div class="toast hidden" id="toast"></div>
+<script>
+'use strict';
+/* =================== 預設面試官人設 =================== */
+const DEFAULT_PERSONAS=[
+{id:'hr',name:'科技業資深HR主管',title:'人資處 資深HR主管（主持人）',short:'HR',shape:'hex',color:'#c026d3',host:true,enabled:true,rate:1.05,pitch:1.15,voiceURI:'',
+prompt:`台灣大型科技公司（半導體／電子製造）人資處資深HR主管，15 年以上招募與面試經驗，是這場聯合面試的主持人。
+負責：開場寒暄、介紹在場面試官、請應徵者自我介紹；最後請應徵者提問並說明後續流程。
+評估重點：求職動機（為何離開現職、為何選科技業與本公司）、穩定度與職涯規劃、組織文化適配（跨部門溝通、抗壓、變革接受度、輪班／緊急應變待命與加班的意願）、行為面試（用 STAR 追問情境、任務、行動、結果，要求具體數字與本人角色）、優缺點與自我覺察、溝通與領導、期望薪資與可到職日。
+風格：親切、節奏明快，但會觀察回答是否前後一致；聽到空泛回答會溫和追問「可以舉一個具體的例子嗎？」。對傳統產業轉科技業的人，會關心適應科技業步調與文化的準備，但不預設否定。專業技術題交給職安主管，策略與管理題交給職安經理。`},
+{id:'ehs_lead',name:'科技業職安主管',title:'EHS 部 職安主管（專業技術）',short:'主管',shape:'star',color:'#2563eb',host:false,enabled:true,rate:1.0,pitch:0.95,voiceURI:'',
+prompt:`科技業 EHS 專業技術面試官。15 年以上臺灣科技業（半導體、電子製造、自動化設備、高科技廠）職安衛實務經驗，熟悉建廠、設備安裝、試車、量產、維修、承攬施工風險。
+專長：臺灣職安法規、ISO 45001、安全衛生管理計畫與自動檢查、危害辨識與風險評估、機械防護與 LOTO、高風險作業與工作許可（動火、高處、吊掛、局限空間、特殊氣體、機器人）、承攬商管理、事故調查與根本原因分析、化學品／SDS／GHS、職業衛生與作業環境監測、緊急應變、廠務與施工安全、教育訓練與安全文化、績效稽核、EHS 數位化與 AI。
+風格：務實、嚴謹，善於追問細節（做什麼、誰執行、如何驗證、主管不同意怎麼辦）；理論與實務並重；對新技術開放但要求說明實際成效與誤判風險；語氣比 HR 溫和，但專業上更嚴格。核心原則：真正的職安能力不是知道多少規定，而是能否讓風險在現場受到有效控制。
+出題方式：每次一個主要問題；區分應徵者是「有參與過／有實際執行能力／有制度建立能力／有專業整合能力」。追問五層：基本認知 → 實際經驗 → 情境判斷 → 困難衝突 → 成效反思，依回答品質調整深度。
+注意：重視控制層級（不是一律靠 PPE）；事故改善不接受只有「加強教育訓練」；不因傳統產業背景否定能力；法條、數值、期限不確定就不要講具體條號或數字，絕不編造；「解除安全防護持續生產」絕不能被視為合理做法。`},
+{id:'ehs_mgr',name:'科技業資深職安經理',title:'EHS 處 資深職安經理（策略管理）',short:'經理',shape:'clover',color:'#16a34a',host:false,enabled:true,rate:0.95,pitch:0.8,voiceURI:'',
+prompt:`台灣科技大廠（半導體／面板／電子製造）EHS 處資深職安經理，20 年以上經驗，管理多廠區職安衛團隊，直接向廠長或營運副總報告。
+評估重點：EHS 策略與年度目標規劃、績效指標（失能傷害頻率 FR／嚴重率 SR、TRIR、虛驚與領先指標）、預算與資源爭取、團隊領導與人才培育、跨部門影響力（與生產、廠務、設備、採購及高層溝通談判）、安全文化推動、客戶與第三方稽核（RBA、ISO 45001／14001、ESG 永續報告）、重大事故與危機處理、變更管理（MOC）、新廠建廠／擴廠專案、承攬商治理制度、EHS 數位化與 AI 投資效益。
+常用情境題：例如「量產趕出貨，生產主管要求暫時旁通連鎖裝置繼續生產，你怎麼處理？」「新廠半年內要完成驗證與取得相關許可，你怎麼排優先順序？」「預算被砍三成，你保留哪些項目、怎麼說服老闆？」。會追問決策依據、利害關係人溝通、取捨、怎麼衡量成效。
+風格：沉穩、站在管理高度、重視商業思維與結果，偶爾挑戰應徵者的觀點，看他能否在堅持安全底線與支持營運之間取得平衡。`}
+];
+const MODELS=[
+['gemini-3.8-flash','gemini-3.8-flash（預設・最新 Flash・免費）'],
+['gemini-3.6-flash','gemini-3.6-flash（上一代 Flash・免費）'],
+['gemini-3.5-flash-lite','gemini-3.5-flash-lite（最快・免費額度較寬鬆）'],
+['gemini-3.1-flash-lite','gemini-3.1-flash-lite（輕量・免費）'],
+['gemini-flash-latest','gemini-flash-latest（自動指向最新 Flash）'],
+['gemini-3-flash-preview','gemini-3-flash-preview（舊預覽版）'],
+['gemini-2.5-flash','gemini-2.5-flash（僅舊專案可用）'],
+['__custom','自訂…']
+];
+const CFG_KEY='interview-cfg', GKEY='interview-gemini-key', SESS_KEY='interview-session', BG_KEY='interview-bg', SYNC_KEY='resume-composer-sync-cfg', LOCAL_RESUME_KEY='resume-composer-v1';
+const API='https://generativelanguage.googleapis.com/v1beta';
+
+/* =================== 小工具 =================== */
+const $=id=>document.getElementById(id);
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const clone=o=>JSON.parse(JSON.stringify(o));
+const pad=n=>String(n).padStart(2,'0');
+const fmtDur=ms=>{const s=Math.max(0,Math.floor(ms/1000));return pad(Math.floor(s/60))+':'+pad(s%60)};
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+function toast(msg,ms){const t=$('toast');t.textContent=msg;t.classList.remove('hidden');clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.add('hidden'),ms||3200)}
+function alertHtml(kind,html){return `<div class="alert ${kind}">${html}</div>`}
+function lsGet(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}}
+function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){console.warn(e)}}
+function nowStamp(d){d=d||new Date();return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())}
+
+/* =================== 設定 =================== */
+const DEF_CFG={model:'gemini-3.8-flash',customModel:'',stream:true,company:'',title:'',jd:'',mode:'normal',len:'t20',handsFree:true,silence:2,tts:true,barge:false,bgsrc:'github',version:'',withFields:false,personas:clone(DEFAULT_PERSONAS)};
+let cfg=Object.assign(clone(DEF_CFG),lsGet(CFG_KEY,{}));
+if(!Array.isArray(cfg.personas)||!cfg.personas.length)cfg.personas=clone(DEFAULT_PERSONAS);
+function saveCfg(){lsSet(CFG_KEY,cfg)}
+function getKey(){try{return localStorage.getItem(GKEY)||''}catch(e){return ''}}
+function modelName(){return (cfg.model==='__custom'?(cfg.customModel||'').trim():cfg.model)||'gemini-3.8-flash'}
+function syncCfg(){const c=lsGet(SYNC_KEY,null);return c&&c.token?Object.assign({owner:'',repo:'',branch:'main',path:'resume.json'},c):null}
+function personaById(id){return cfg.personas.find(p=>p.id===id)}
+function activePersonas(){return cfg.personas.filter(p=>p.enabled)}
+function hostPersona(list){list=list||activePersonas();return list.find(p=>p.host)||list[0]}
+function lenSpec(v){v=v||cfg.len;const m=/^([tq])(\d+)$/.exec(v)||['','t','20'];return {type:m[1],val:+m[2]}}
+/* =================== 履歷 → 純文字（與履歷組合器相同規則） =================== */
+const SEC_LABEL={summary:'摘要',profile:'基本資料',conditions:'求職條件',education:'學歷',jobs:'工作經歷',languages:'語言能力',skills:'專長技能',certs:'證照',projects:'專案經驗',autobio:'自傳'};
+const PRIVATE_FIELD=/手機|電話|e-?mail|信箱|地址|住址|通訊|聯絡|身分證|生日|出生|line|facebook|ig\b/i;
+function resumeToText(st,vid,withFields){
+  const card=id=>st.cards.find(c=>c.id===id);
+  const v=st.versions.find(x=>x.id===vid)||st.versions[0];if(!v)return '';
+  const ym=s=>{const m=String(s||'').match(/(\d{4})\D+(\d{1,2})/);return m?[+m[1],+m[2]]:null};
+  const now=[new Date().getFullYear(),new Date().getMonth()+1];
+  const yrs=(()=>{const a=ym(st.profile&&st.profile.careerStart);return a?Math.max(0,Math.floor(((now[0]-a[0])*12+(now[1]-a[1]))/12)):0})();
+  const dur=(s,e)=>{const a=ym(s);if(!a)return'';const b=ym(e)||now;const m=(b[0]-a[0])*12+(b[1]-a[1])+1;if(m<=0)return'';const y=Math.floor(m/12),r=m%12;return(y?y+'年':'')+(r?r+'個月':'')};
+  const fill=t=>String(t==null?'':t).replace(/\{\{\s*年資\s*\}\}/g,yrs).replace(/\{\{\s*目標職稱\s*\}\}/g,v.targetTitle||cfg.title||'').replace(/\{\{\s*公司\s*\}\}/g,v.company||cfg.company||'');
+  const S=v.sections||{};const L=k=>(S[k]||[]);
+  const groupBy=(ids,fn)=>{const g=[];ids.forEach(id=>{const c=card(id);if(!c)return;const k=fn(c)||'';const last=g[g.length-1];if(last&&last.k===k)last.items.push(c);else g.push({k,items:[c]})});return g};
+  const merge=(ids,fn)=>{const m=new Map();ids.forEach(id=>{const c=card(id);if(!c)return;const k=fn(c)||'';if(!m.has(k))m.set(k,[]);m.get(k).push(c)});return[...m].map(([k,items])=>({k,items}))};
+  const meta=c=>c.meta||{};
+  const T={
+    header(){const p=st.profile||{};return[p.name,fill(p.headline),fill(p.eduLine),fill(p.tagline),...L('summary').map(card).filter(Boolean).map(c=>'\n'+fill(c.content))].filter(s=>s&&String(s).trim()).join('\n')},
+    profile(){if(!withFields)return'';return((st.profile||{}).fields||[]).filter(f=>f.value&&!(v.hiddenFields||[]).includes(f.id)&&!PRIVATE_FIELD.test(f.label)).map(f=>`${f.label}：${fill(f.value)}`).join('\n')},
+    conditions(){return L('conditions').map(card).filter(Boolean).map(c=>`${c.title}：${fill(c.content)}`).join('\n')},
+    education(){return L('education').map(card).filter(Boolean).map(c=>`${c.title}｜${[meta(c).dept,meta(c).degree].filter(Boolean).join(' ')}｜${meta(c).start||''}～${meta(c).end||''}${c.content?'\n'+fill(c.content):''}`).join('\n')},
+    jobs(){const js=L('jobs').map(card).filter(Boolean);if(!js.length)return'';return`總年資：${yrs}年\n\n`+js.map(j=>{const m=meta(j);const d=dur(m.start,m.end);const info=[[m.industry,m.size].filter(Boolean).join(' '),m.category,m.extra].filter(Boolean).join('｜');
+      const o=[`${j.title}｜${m.company||''}`,`${m.start||''}～${m.end||'仍在職'}${d?`（${d}）`:''}`];if(info)o.push(info);if(j.content)o.push(fill(j.content));
+      groupBy((v.jobBullets||{})[j.id]||[],c=>meta(c).group).forEach(g=>{if(g.k)o.push(`【${g.k}】`);g.items.forEach(c=>o.push('• '+fill(c.content)))});return o.join('\n')}).join('\n\n')},
+    languages(){return L('languages').map(card).filter(Boolean).map(c=>`${c.title}：${fill(c.content)}`).join('\n')},
+    skills(){return merge(L('skills'),c=>meta(c).group).map(g=>(g.k?g.k+'\n':'')+g.items.map(c=>{const t=fill(c.title),b=fill(c.content);return '• '+(b?(c.showTitle&&t?t+'：'+b:b):t)}).join('\n')).join('\n\n')},
+    certs(){return merge(L('certs'),c=>meta(c).category).map(g=>(g.k?g.k+'\n':'')+g.items.map(c=>'• '+fill(c.title)+(meta(c).issuer?`（${meta(c).issuer}）`:'')+(c.content?'－'+fill(c.content):'')).join('\n')).join('\n\n')},
+    projects(){return L('projects').map(card).filter(Boolean).map(c=>`■ ${fill(c.title)}\n${fill(c.content)}`).join('\n\n')},
+    autobio(){const out=[];if((v.intro||'').trim())out.push(fill(v.intro));let style='bullet',n=0;
+      L('autobio').forEach(id=>{const c=card(id);if(!c)return;if(c.type==='autobio'){style=meta(c).listStyle||'bullet';n=0;const t=c.showTitle?fill(c.title):'';const b=fill(c.content);if(t||b)out.push((t?`【${t}】`+(b?' ':''):'')+b)}
+        else{const t=fill(c.title),b=fill(c.content);const line=c.showTitle&&t&&b?t+'：'+b:(b||t);n++;out.push((style==='number'?n+'. ':style==='none'?'':'• ')+line)}});
+      if((v.outro||'').trim())out.push(fill(v.outro));return out.join('\n')}
+  };
+  const layout=(v.layout&&v.layout.length?v.layout:['header','profile','conditions','education','jobs','languages','skills','certs','projects','autobio'].map(k=>({key:k,visible:true})));
+  const body=layout.filter(l=>l.visible&&T[l.key]).map(l=>{const t=T[l.key]();if(!t)return'';return l.key==='header'?t:`【${SEC_LABEL[l.key]||l.key}】\n${t}`}).filter(Boolean).join('\n\n');
+  return body;
+}
+
+/* =================== GitHub =================== */
+function ghHeaders(t){return {'Accept':'application/vnd.github+json','Authorization':'Bearer '+t,'X-GitHub-Api-Version':'2022-11-28'}}
+const encPath=p=>p.split('/').map(encodeURIComponent).join('/');
+function b64dec(b){const bin=atob(b.replace(/\s/g,''));const u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);return new TextDecoder().decode(u)}
+function b64enc(s){const u=new TextEncoder().encode(s);let bin='';for(let i=0;i<u.length;i+=0x8000)bin+=String.fromCharCode.apply(null,u.subarray(i,i+0x8000));return btoa(bin)}
+async function ghGet(c,path){const r=await fetch(`https://api.github.com/repos/${encodeURIComponent(c.owner)}/${encodeURIComponent(c.repo)}/contents/${encPath(path)}?ref=${encodeURIComponent(c.branch||'main')}`,{headers:ghHeaders(c.token),cache:'no-store'});
+  if(r.status===404)return null;if(!r.ok)throw new Error(ghErr(r.status));const j=await r.json();return {sha:j.sha,text:j.content?b64dec(j.content):''}}
+async function ghPut(c,path,text,message,sha){const body={message,content:b64enc(text),branch:c.branch||'main'};if(sha)body.sha=sha;
+  const r=await fetch(`https://api.github.com/repos/${encodeURIComponent(c.owner)}/${encodeURIComponent(c.repo)}/contents/${encPath(path)}`,{method:'PUT',headers:Object.assign({'Content-Type':'application/json'},ghHeaders(c.token)),body:JSON.stringify(body)});
+  if(!r.ok)throw new Error(ghErr(r.status));return r.json()}
+function ghErr(s){return s===401?'GitHub 金鑰無效或已過期（401），請到履歷組合器重新設定。':s===403?'GitHub 金鑰權限不足（403），需要該 repo 的 Contents 讀寫權限。':s===404?'找不到 repo 或檔案（404），請確認 owner／repo 設定。':s===409||s===422?'GitHub 檔案衝突（'+s+'），請再試一次。':'GitHub 錯誤（HTTP '+s+'）'}
+
+/* =================== Gemini =================== */
+class GemError extends Error{constructor(msg,kind,extra){super(msg);this.kind=kind;Object.assign(this,extra||{})}}
+const gemFlags={noThinking:{},noSchema:{}};
+function thinkingCfg(model,level){if(gemFlags.noThinking[model])return null;
+  if(/^gemini-2\./.test(model)){return /pro/.test(model)?null:{thinkingBudget:0}}
+  if(/^gemini-(3|4|flash|pro)/.test(model)||/latest/.test(model))return level?{thinkingLevel:level}:null;return null}
+function parseRetry(j){try{const d=(j.error.details||[]).find(x=>/RetryInfo/.test(x['@type']||''));if(d&&d.retryDelay){const s=parseFloat(d.retryDelay);if(s>0)return Math.ceil(s)}}catch(e){}
+  const m=/retry in ([\d.]+)s/i.exec((j&&j.error&&j.error.message)||'');return m?Math.ceil(+m[1]):0}
+function gemHttpError(status,j){const e=(j&&j.error)||{};const msg=e.message||'';const st=e.status||'';
+  if(status===429||st==='RESOURCE_EXHAUSTED'){const retry=parseRetry(j);const daily=/per ?day|PerDay|daily/i.test(msg+JSON.stringify(e.details||''));
+    return new GemError(daily?`今天的 Gemini 免費額度已用完（429）。每日額度在太平洋時間午夜重置（約台灣時間下午 3～4 點）。可以改用其他模型（例如 gemini-3.5-flash-lite），或明天再試。`
+      :`Gemini 請求太頻繁或超過免費額度（429）。${retry?`請約 ${retry} 秒後再試。`:'請稍等一分鐘再試。'}也可以在設定改用 gemini-3.5-flash-lite。`,'quota',{retry,daily})}
+  if(/API_KEY_INVALID|API key not valid|API key expired/i.test(msg+JSON.stringify(e.details||'')))return new GemError('Gemini 金鑰無效或已過期，請到 ⚙ 設定重新貼上金鑰（https://aistudio.google.com/apikey）。','key');
+  if(status===403)return new GemError('Gemini 拒絕存取（403）：金鑰沒有權限、API 未啟用，或你所在地區不支援。'+(msg?'（'+msg.slice(0,160)+'）':''),'perm');
+  if(status===404)return new GemError(`找不到模型「${modelName()}」或此金鑰不能使用（404）。請到 ⚙ 設定按「載入我的可用模型」重新選擇。`,'model');
+  if(status===400)return new GemError('Gemini 請求格式錯誤（400）：'+msg.slice(0,200),'bad',{raw:msg});
+  if(status>=500)return new GemError(`Gemini 伺服器忙碌（${status}），請稍後再試。`,'server');
+  return new GemError(`Gemini 錯誤（HTTP ${status}）：${msg.slice(0,200)}`,'other')}
+/** 呼叫 Gemini；回傳文字。opts: {system, contents, schema, stream, onPartial, thinking, temperature, signal} */
+async function gemini(opts,_try){_try=_try||0;const key=getKey();if(!key)throw new GemError('尚未設定 Gemini API 金鑰，請先到 ⚙ 設定貼上金鑰。','nokey');
+  const model=modelName();const stream=!!opts.stream;
+  const gc={temperature:opts.temperature==null?0.9:opts.temperature};
+  if(opts.schema){gc.responseMimeType='application/json';if(!gemFlags.noSchema[model])gc.responseSchema=opts.schema}
+  const tc=thinkingCfg(model,opts.thinking);if(tc)gc.thinkingConfig=tc;
+  const body={contents:opts.contents,generationConfig:gc};if(opts.system)body.systemInstruction={parts:[{text:opts.system}]};
+  const url=`${API}/models/${encodeURIComponent(model)}:${stream?'streamGenerateContent?alt=sse':'generateContent'}`;
+  let r;try{r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':key},body:JSON.stringify(body),signal:opts.signal})}
+  catch(e){if(e.name==='AbortError')throw e;if(_try<1){await sleep(1200);return gemini(opts,_try+1)}throw new GemError('連不到 Gemini（網路錯誤），請檢查網路後再試。','net')}
+  if(!r.ok){let j=null;try{j=await r.json()}catch(e){}const err=gemHttpError(r.status,j);
+    if(err.kind==='bad'&&/thinking/i.test(err.raw||'')&&!gemFlags.noThinking[model]){gemFlags.noThinking[model]=1;return gemini(opts,_try)}
+    if(err.kind==='bad'&&/schema|response_?schema|responseMimeType/i.test(err.raw||'')&&!gemFlags.noSchema[model]){gemFlags.noSchema[model]=1;return gemini(opts,_try)}
+    if(err.kind==='server'&&_try<1){await sleep(1500);return gemini(opts,_try+1)}
+    throw err}
+  let out='',finish='',block='';
+  const take=j=>{if(j.error)throw gemHttpError(j.error.code||500,j);if(j.promptFeedback&&j.promptFeedback.blockReason)block=j.promptFeedback.blockReason;
+    const c=(j.candidates||[])[0];if(!c)return;if(c.finishReason)finish=c.finishReason;((c.content&&c.content.parts)||[]).forEach(p=>{if(p.text&&!p.thought)out+=p.text})};
+  if(stream&&r.body&&r.body.getReader){const rd=r.body.getReader(),dec=new TextDecoder();let buf='';
+    const line=l=>{l=l.replace(/\r$/,'');if(!l.startsWith('data:'))return;const d=l.slice(5).trim();if(!d||d==='[DONE]')return;let j;try{j=JSON.parse(d)}catch(e){return}take(j);opts.onPartial&&opts.onPartial(out)};
+    for(;;){const {done,value}=await rd.read();if(done)break;buf+=dec.decode(value,{stream:true});let i;while((i=buf.indexOf('\n'))>=0){line(buf.slice(0,i));buf=buf.slice(i+1)}}
+    if(buf.trim())line(buf)}
+  else{let j;try{j=await r.json()}catch(e){throw new GemError('Gemini 回傳內容無法解析。','parse')}take(j);opts.onPartial&&opts.onPartial(out)}
+  if(!out.trim()){if(block||/SAFETY|PROHIBITED|BLOCK/i.test(finish))throw new GemError('Gemini 因安全政策擋下這次回應（'+(block||finish)+'），請換個說法再試。','blocked');
+    if(_try<1){await sleep(800);return gemini(opts,_try+1)}throw new GemError('Gemini 沒有回傳內容'+(finish?'（'+finish+'）':'')+'，請再試一次。','empty')}
+  return out}
+async function listModels(){const key=getKey();if(!key)throw new GemError('請先輸入並儲存金鑰。','nokey');
+  const r=await fetch(`${API}/models?pageSize=200`,{headers:{'x-goog-api-key':key}});let j=null;try{j=await r.json()}catch(e){}
+  if(!r.ok)throw gemHttpError(r.status,j);
+  return (j.models||[]).filter(m=>(m.supportedGenerationMethods||[]).includes('generateContent')).map(m=>({id:String(m.name||'').replace(/^models\//,''),label:m.displayName||''}))
+    .filter(m=>/^gemini/.test(m.id)&&!/image|tts|audio|live|embedding|robotics|computer|native/i.test(m.id))}
+
+/* =================== 回應解析 =================== */
+function turnSchema(ids){return {type:'OBJECT',properties:{speaker:{type:'STRING',enum:ids},text:{type:'STRING'},note:{type:'STRING'},end:{type:'BOOLEAN'}},required:['speaker','text','end'],propertyOrdering:['speaker','text','note','end']}}
+function matchPersona(sp,list){sp=String(sp||'').trim();if(!sp)return null;const lo=sp.toLowerCase();
+  return list.find(p=>p.id.toLowerCase()===lo)||list.find(p=>p.name===sp||p.short===sp)||list.find(p=>sp.includes(p.name)||p.name.includes(sp))||list.find(p=>p.short&&sp.includes(p.short))
+    ||(/hr|人資|人力/i.test(sp)?list.find(p=>p.host):null)||(/經理|manager|mgr/i.test(sp)?list.find(p=>/經理|mgr/.test(p.name+p.id)):null)||(/主管|lead/i.test(sp)?list.find(p=>/主管|lead/.test(p.name+p.id)&&!p.host):null)}
+function cleanSpoken(t){return String(t||'').replace(/\*\*|__|`|#{1,6}\s/g,'').replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/gu,'').trim()}
+function parseTurn(raw,list,fallbackId){
+  let s=String(raw||'').trim().replace(/^```(?:json|JSON)?\s*/,'').replace(/\s*```\s*$/,'').trim();let o=null;
+  try{o=JSON.parse(s)}catch(e){const i0=s.indexOf('{'),m=i0>=0?[(s.match(/\{[\s\S]*\}/)||[s.slice(i0)])[0]]:null;if(m){try{o=JSON.parse(m[0])}catch(e2){
+      const sp=/"speaker"\s*:\s*"([^"]*)"/.exec(m[0]),tx=/"text"\s*:\s*"((?:[^"\\]|\\.)*)"/.exec(m[0]),en=/"end"\s*:\s*(true|false)/.exec(m[0]);
+      if(tx){let t=tx[1];try{t=JSON.parse('"'+t+'"')}catch(e3){}o={speaker:sp?sp[1]:'',text:t,end:en?en[1]==='true':false}}}}}
+  if(Array.isArray(o))o=o[0];
+  if(!o||typeof o!=='object'){const m=s.match(/^\s*([^：:\n]{1,20})[：:]\s*([\s\S]+)$/);o=m&&matchPersona(m[1],list)?{speaker:m[1],text:m[2]}:{speaker:'',text:s}}
+  const p=matchPersona(o.speaker||o.id||o.name||o.interviewer,list)||list.find(x=>x.id===fallbackId)||list[0];
+  let text=cleanSpoken(o.text||o.content||o.message||o.say||'');
+  [p.name,p.short].filter(Boolean).forEach(n=>{const re=new RegExp('^[（(【]?'+n.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'[）)】]?\\s*[：:]\\s*');text=text.replace(re,'')});
+  return {speaker:p.id,text,note:String(o.note||'').trim(),end:o.end===true||o.end==='true',ok:!!text}}
+function partialField(s,f){const m=new RegExp('"'+f+'"\\s*:\\s*"((?:[^"\\\\]|\\\\.)*)').exec(s||'');if(!m)return '';let t=m[1].replace(/\\$/,'');try{return JSON.parse('"'+t+'"')}catch(e){return t.replace(/\\n/g,'\n').replace(/\\"/g,'"')}}
+
+/* =================== 簡易 Markdown =================== */
+function mdInline(s){return esc(s).replace(/\*\*([^*]+)\*\*/g,'<b>$1</b>').replace(/(^|[^*])\*([^*\n]+)\*/g,'$1<i>$2</i>').replace(/`([^`]+)`/g,'<code>$1</code>')}
+function md(src){const L=String(src||'').replace(/\r/g,'').split('\n');let h='',i=0;
+  const isTbl=l=>/^\s*\|.*\|\s*$/.test(l);
+  while(i<L.length){const l=L[i];
+    if(/^\s*$/.test(l)){i++;continue}
+    let m;
+    if(m=/^(#{1,4})\s+(.*)$/.exec(l)){const n=m[1].length;h+=`<h${n}>${mdInline(m[2])}</h${n}>`;i++;continue}
+    if(/^\s*(-{3,}|\*{3,})\s*$/.test(l)){h+='<hr>';i++;continue}
+    if(isTbl(l)){const rows=[];while(i<L.length&&isTbl(L[i])){rows.push(L[i]);i++}
+      const cells=r=>r.trim().replace(/^\||\|$/g,'').split('|').map(c=>c.trim());let head=cells(rows[0]),rest=rows.slice(1);
+      if(rest.length&&/^\s*\|?\s*:?-{2,}/.test(rest[0]))rest=rest.slice(1);
+      h+='<table><thead><tr>'+head.map(c=>`<th>${mdInline(c)}</th>`).join('')+'</tr></thead><tbody>'+rest.map(r=>'<tr>'+cells(r).map(c=>`<td>${mdInline(c)}</td>`).join('')+'</tr>').join('')+'</tbody></table>';continue}
+    if(/^\s*>/.test(l)){const b=[];while(i<L.length&&/^\s*>/.test(L[i])){b.push(L[i].replace(/^\s*>\s?/,''));i++}h+=`<blockquote>${b.map(mdInline).join('<br>')}</blockquote>`;continue}
+    if(/^\s*([-*•]|\d+[.)])\s+/.test(l)){const ol=/^\s*\d/.test(l);const it=[];while(i<L.length&&/^\s*([-*•]|\d+[.)])\s+/.test(L[i])){let t=L[i].replace(/^\s*([-*•]|\d+[.)])\s+/,'');i++;
+        while(i<L.length&&/^\s{2,}\S/.test(L[i])&&!/^\s*([-*•]|\d+[.)])\s+/.test(L[i])){t+='\n'+L[i].trim();i++}it.push(t)}
+      h+=(ol?'<ol>':'<ul>')+it.map(t=>`<li>${mdInline(t).replace(/\n/g,'<br>')}</li>`).join('')+(ol?'</ol>':'</ul>');continue}
+    const p=[];while(i<L.length&&!/^\s*$/.test(L[i])&&!/^(#{1,4})\s/.test(L[i])&&!isTbl(L[i])&&!/^\s*>/.test(L[i])&&!/^\s*([-*•]|\d+[.)])\s+/.test(L[i])){p.push(L[i]);i++}
+    h+=`<p>${p.map(mdInline).join('<br>')}</p>`}
+  return h}
+/* =================== Prompt =================== */
+function personaLines(list,hostId){return list.map(p=>`- id「${p.id}」｜${p.name}｜${p.title||''}${p.id===hostId?'（主持人）':''}\n${String(p.prompt||'').trim().split('\n').map(l=>'  '+l).join('\n')}`).join('\n\n')}
+function contextBlock(m){const ls=lenSpec(m.len);
+  return `【應徵職缺】公司：${m.company||'（未提供，請以一般台灣科技業公司設定）'}；職稱：${m.title||'（未提供，以 EHS／職安衛相關職務設定）'}
+【職缺內容】
+${m.jd||'（未提供）'}
+
+【應徵者背景（履歷）】
+${m.bg||'（未提供：請在自我介紹後依應徵者口述內容出題）'}
+
+【面試模式】${m.mode==='stress'?'壓力面試：面試官較尖銳、節奏快，會質疑回答的真實性與合理性、指出矛盾、連續追問細節、提出兩難情境或時間壓力，偶爾表現出不滿意；但仍保持專業禮貌，不做人身攻擊、不涉及歧視或隱私（婚育、宗教、政治、身心狀況等）。':'一般面試：專業、友善、節奏自然，仍會針對空泛回答追問細節。'}
+【預定長度】${ls.type==='t'?`約 ${ls.val} 分鐘`:`約 ${ls.val} 題主要問題（每題可追問 1～2 次）`}`}
+function buildSystem(m){const list=m.personas,host=m.host;const ids=list.map(p=>p.id);
+  return `你要扮演一場「台灣科技業 EHS（環安衛／職安衛）職缺」的真實模擬聯合面試。面試官共 ${list.length} 位，輪流發問；使用者是應徵者，以語音作答（語音辨識可能有錯字或同音字，請依上下文理解，不要糾正錯字）。全程使用臺灣繁體中文與台灣職場慣用語。
+
+【面試官】
+${personaLines(list,host)}
+
+${contextBlock(m)}
+
+【規則】
+1. 每次只輸出「一位」面試官的「一段」發言：1～3 句、口語化，像真人在台灣面試現場說話（可自然地用「好」「了解」「嗯」承接），不要條列、不要 Markdown、不要表情符號，盡量 90 字以內。一次只問一個問題。
+2. 第一輪由主持人「${host}」開場：簡短寒暄、介紹在場面試官、請應徵者先做 2～3 分鐘自我介紹。
+3. 依應徵者剛才的回答自然追問（具體做法、本人角色、數據成效、遇到阻力怎麼辦、如何驗證）；同一主題追問 1～2 次後換題或換人。依各面試官專長分工，不要重複已問過的題目；由你決定下一位發言者，讓每位面試官都有發問機會，主持人負責轉場。
+4. 依履歷與職缺內容出題，可以引用履歷中的具體經歷追問細節與真實性；不要捏造履歷沒寫的經歷。
+5. 面試中不要給標準答案或講評（講評留到面試後的報告）。應徵者要求重述題目時，換句話再問一次。
+6. 法規條號、數值、期限若不確定，不要說出具體條號或數字，絕不編造。
+7. 依【系統狀態】掌握時間：接近預定長度時準備收尾；時間到時由主持人詢問「你有沒有什麼問題想問我們？」，回答後簡短說明後續流程並道謝，這最後一句的 end 設為 true。
+8. 應徵者說「結束面試」或明確表示要結束時，由主持人禮貌收尾並把 end 設為 true。
+9. 應徵者沒聽清楚、答非所問或回答很短時，可以溫和引導或換個問法。
+10. 「[系統…]」開頭的訊息是程式提示，不是應徵者說的話，不要在發言中提到它。
+
+【輸出格式】只輸出一個 JSON 物件，不要其他文字：
+{"speaker":"<面試官 id，必須是 ${ids.map(i=>'「'+i+'」').join('、')} 之一>","text":"<這位面試官要說出口的話>","note":"<給系統的簡短內部備註：這題的考察重點，不會被念出來>","end":false}`}
+function reportSystem(m){return `你是剛結束的這場模擬面試的面試官小組，現在要給應徵者一份誠實、具體、可以拿來改進的評估報告。使用臺灣繁體中文，輸出 Markdown。
+
+【面試官】
+${personaLines(m.personas,m.host)}
+
+${contextBlock(m)}
+
+【評估原則】
+- 依據逐字稿中應徵者「實際說出的內容」評分，盡量引用原話當依據；沒問到的面向標示「未充分評估」。
+- 語音辨識可能有錯字，請依上下文理解，不要因錯字扣分。
+- 法規條號或數值若不確定請標註「待查證」，不要編造。
+- 不因傳統產業背景直接否定能力，但要具體指出轉換到科技業需要補強什麼。
+
+【報告結構】（依序使用以下標題）
+# 模擬面試評估報告
+> 一句話總評
+## 錄取可能性
+從「高／中高／中／中低／低」選一個，給 0～100% 的估計與 2～3 句理由；註明僅為模擬練習參考。
+## 各面試官評分與評語
+先用表格：| 面試官 | 分數（1–10） | 一句話評語 |
+再為每位面試官寫一個 ### 小節：觀察（2～4 點）、最在意的疑慮、若是真實面試會不會推薦進下一關。
+## 能力面向評分
+表格：| 面向 | 分數（1–5） | 依據 |；面向：表達與邏輯、求職動機與穩定度、組織適配與溝通、職安法規與技術、現場風險控制與實務、管理領導與策略、數位化與持續改善${m.mode==='stress'?'、壓力應對':''}。
+## 優點
+3～5 點，每點附逐字稿依據。
+## 需改進
+3～5 點，每點說明為什麼重要、怎麼改。
+## 建議回答示範
+挑 2～4 題回答較弱的題目，每題：
+### 題目：（原題摘要）（提問者）
+- 你的回答重點：
+- 問題在哪：
+- 建議回答示範：第一人稱、口語、150～250 字，用 STAR 或「結論→做法→成效→反思」結構；只能使用履歷或逐字稿中出現過的經歷，需要具體數字但你不知道時寫【請填入實際數字】，不要捏造。
+## 下次練習重點
+3 點具體可執行的練習建議。`}
+function transcriptText(withTime){const m=S.meta;return S.turns.filter(t=>t.role!=='cmd').map(t=>{const tm=withTime?`（${fmtDur(t.t||0)}）`:'';
+  if(t.role==='ai'){const p=m.personas.find(x=>x.id===t.speaker)||{name:t.speaker};return `【${p.name}】${tm}${t.text}`}return `【應徵者】${tm}${t.text}`}).join('\n')}
+
+/* =================== Session =================== */
+let S={phase:'setup',turns:[],meta:null,elapsedBase:0,startAt:0,ended:false,report:'',busy:false,wrap:0,savedPath:''};
+function elapsed(){return S.phase==='run'?S.elapsedBase+(Date.now()-S.startAt):S.elapsedBase}
+function saveSession(){if(!S.meta)return;lsSet(SESS_KEY,{v:1,turns:S.turns,meta:S.meta,elapsed:elapsed(),ended:S.ended,report:S.report,savedPath:S.savedPath||''})}
+function progressNote(){const m=S.meta,el=elapsed(),mins=el/60000,ans=S.turns.filter(t=>t.role==='me').length,ls=lenSpec(m.len);
+  let s=`[系統狀態：已進行 ${Math.floor(mins)} 分 ${Math.floor(el/1000)%60} 秒；應徵者已回答 ${ans} 次。`,wrap=false;
+  if(ls.type==='t'){const left=ls.val-mins;if(left<=0){s+='預定時間已到，請立即進入收尾（主持人詢問應徵者有無問題 → 道謝結束，最後一句 end=true）。';wrap=true}
+    else if(left<=Math.max(2,ls.val*0.15))s+=`剩約 ${Math.ceil(left)} 分鐘，請再問最多 1 題後收尾。`;else s+=`預定約 ${ls.val} 分鐘。`}
+  else{const target=ls.val*2+1;if(ans>=target){s+='預定題數已完成，請立即進入收尾（主持人詢問應徵者有無問題 → 道謝結束，最後一句 end=true）。';wrap=true}
+    else if(ans>=target-2)s+='題數快到了，請再問最多 1 題後收尾。';else s+=`預定約 ${ls.val} 題主要問題，目前約第 ${Math.max(1,Math.ceil(ans/2))} 題。`}
+  return {text:s+' 請輸出下一位面試官的發言 JSON。]',wrap}}
+function buildContents(extra){const c=[];const push=(role,text)=>{const last=c[c.length-1];if(last&&last.role===role)last.parts[0].text+='\n'+text;else c.push({role,parts:[{text}]})};
+  push('user','[系統：面試開始，請主持人開場。]');
+  S.turns.forEach(t=>{if(t.role==='ai')push('model',JSON.stringify({speaker:t.speaker,text:t.text,note:t.note||'',end:false}));else if(t.role==='me')push('user','應徵者：'+t.text);else if(t.role==='cmd')push('user','[系統：'+t.text+']')});
+  const pn=progressNote();push('user',pn.text+(extra?' '+extra:''));return {contents:c,wrap:pn.wrap}}
+
+/* =================== 語音合成 =================== */
+let VOICES=[];const hasTTS='speechSynthesis' in window&&typeof SpeechSynthesisUtterance!=='undefined';
+function loadVoices(){if(!hasTTS)return;try{VOICES=speechSynthesis.getVoices()||[]}catch(e){VOICES=[]}renderVoiceInfo();if($('dlg').open)renderPersonaEditor()}
+function zhVoices(){const rank=v=>/TW|Hant/i.test(v.lang)||/臺灣|台灣|Taiwan/i.test(v.name)?0:/^zh[-_]?CN|Hans|cmn/i.test(v.lang)?1:/HK|yue/i.test(v.lang)?2:3;
+  return VOICES.filter(v=>/^(zh|cmn|yue)/i.test(v.lang)||/chinese|中文|國語|普通话|普通話|粵語/i.test(v.name)).sort((a,b)=>rank(a)-rank(b))}
+function cfgPersona(id){return personaById(id)||(S.meta&&S.meta.personas.find(p=>p.id===id))||{}}
+function voiceFor(p){if(p.voiceURI){const v=VOICES.find(x=>x.voiceURI===p.voiceURI);if(v)return v}const z=zhVoices();if(!z.length)return null;
+  const tw=z.filter(v=>/TW|Hant/i.test(v.lang));const pool=tw.length>=2?tw:z;const idx=Math.max(0,cfg.personas.findIndex(x=>x.id===p.id));return pool[idx%pool.length]}
+let speakCtl=null;const keepUtt=[];
+function speak(text,id){return new Promise(res=>{const p=cfgPersona(id);
+  if(!hasTTS||!cfg.tts||!text){res();return}
+  try{speechSynthesis.cancel()}catch(e){}
+  const parts=(String(text).match(/[^。！？!?；;\n]+[。！？!?；;]*|[。！？!?；;\n]+/g)||[text]).map(s=>s.trim()).filter(Boolean);
+  const rate=+p.rate||1,pitch=p.pitch==null?1:+p.pitch,v=voiceFor(p);let i=0,done=false;
+  const fin=()=>{if(done)return;done=true;clearTimeout(wd);speakCtl=null;S.speakingId=null;renderPanel();renderMic();res()};
+  const wd=setTimeout(fin,5000+String(text).length*330/Math.max(.5,rate));
+  speakCtl={stop:fin};S.speakingId=id;renderPanel();renderMic();
+  const next=()=>{if(done)return;if(i>=parts.length)return fin();const u=new SpeechSynthesisUtterance(parts[i++]);u.lang=v?v.lang:'zh-TW';if(v)u.voice=v;u.rate=rate;u.pitch=pitch;
+    u.onend=next;u.onerror=next;keepUtt.push(u);if(keepUtt.length>20)keepUtt.shift();try{speechSynthesis.speak(u)}catch(e){fin()}};
+  next()})}
+function stopSpeaking(){if(speakCtl){const c=speakCtl;speakCtl=null;c.stop()}if(hasTTS){try{speechSynthesis.cancel()}catch(e){}}}
+
+/* =================== 語音辨識 =================== */
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+let rec=null,recOn=false,recMode='',recFinal='',recInterim='',silT=null,pressAt=0;
+function startRec(mode,keepTTS){if(!SR){toast('此瀏覽器不支援語音辨識，請用打字作答，或改用電腦版 Chrome／Edge');return false}
+  if(S.phase!=='run'||S.busy)return false;if(!keepTTS)stopSpeaking();
+  if(recOn){recMode=mode;renderMic();return true}
+  recFinal='';recInterim='';recMode=mode;recOn=true;newRec();renderMic();renderLive();return true}
+function newRec(){const r=new SR();r.lang='zh-TW';r.continuous=true;r.interimResults=true;r.maxAlternatives=1;
+  r.onresult=e=>{if(rec!==r)return;let interim='';for(let i=e.resultIndex;i<e.results.length;i++){const x=e.results[i];if(x.isFinal)recFinal+=x[0].transcript;else interim+=x[0].transcript}
+    recInterim=interim;if((recFinal+recInterim).trim()&&speakCtl)stopSpeaking();renderLive();armSilence()};
+  r.onerror=e=>{if(rec!==r)return;const er=e.error;const fatal={'not-allowed':'無法使用麥克風：請在網址列左側的🔒圖示允許「麥克風」後再試；或改用打字作答。','service-not-allowed':'瀏覽器不允許語音辨識服務（請用 Chrome／Edge 並允許麥克風）。','network':'語音辨識需要網路（Chrome 會把語音送到 Google 伺服器辨識），請檢查網路後再試，或改用打字。','audio-capture':'找不到麥克風裝置，請確認麥克風已連接。','language-not-supported':'此瀏覽器不支援 zh-TW 語音辨識。'}[er];
+    if(fatal){recOn=false;showRunAlert('err',fatal)}};
+  r.onend=()=>{if(rec!==r)return;recFinal+=recInterim;recInterim='';rec=null;if(recOn)setTimeout(()=>{if(recOn&&!rec){try{newRec()}catch(e){recOn=false;renderMic()}}},120);else renderMic()};
+  rec=r;try{r.start()}catch(e){rec=null;recOn=false;showRunAlert('err','語音辨識無法啟動：'+e.message);renderMic()}}
+function armSilence(){clearTimeout(silT);if(recMode==='hands'&&(recFinal+recInterim).trim())silT=setTimeout(()=>{if(recOn&&recMode==='hands')commitRec()},Math.max(800,(+cfg.silence||2)*1000))}
+function stopRec(){recOn=false;clearTimeout(silT);const r=rec;rec=null;recFinal='';recInterim='';if(r){try{r.abort()}catch(e){}}renderMic();renderLive()}
+function commitRec(){const text=(recFinal+recInterim).trim();stopRec();if(!text){setMicStatus('沒有聽到內容，請再試一次');return}
+  if(!sendAnswer(text)){$('txt').value=text;toast('面試官還在思考，已把你的回答放到文字框，稍後按「送出」')}}
+function micDown(){if(S.phase!=='run')return;if(recOn){pressAt=0;commitRec();return}if(S.busy){toast('面試官思考中，請稍候…');return}if(startRec('ptt'))pressAt=Date.now()}
+function micUp(){if(!pressAt)return;const held=Date.now()-pressAt;pressAt=0;if(held>450&&recOn)commitRec();else if(recOn){recMode='toggle';renderMic()}}
+
+/* =================== 面試流程 =================== */
+function sendAnswer(text){text=String(text||'').trim();if(!text||S.phase!=='run')return false;if(S.busy)return false;
+  stopSpeaking();if(recOn)stopRec();S.turns.push({role:'me',text,t:elapsed()});saveSession();renderChat();askNext();return true}
+async function askNext(extra,_auto){if(S.busy||S.phase!=='run')return;S.busy=true;clearRunAlert();renderMic();
+  const m=S.meta,list=m.personas;S.pending={speaker:'',text:''};renderChat();renderPanel();
+  const {contents,wrap}=buildContents(extra);if(wrap)S.wrap=(S.wrap||0)+1;
+  const req={system:buildSystem(m),contents,schema:turnSchema(list.map(p=>p.id)),stream:cfg.stream,thinking:/lite/.test(modelName())?'minimal':'low',temperature:m.mode==='stress'?1.0:0.85,
+    onPartial:s=>{if(!S.pending)return;const sp=partialField(s,'speaker');const p=sp&&matchPersona(sp,list);S.pending={speaker:p?p.id:'',text:partialField(s,'text')};updatePending()}};
+  try{let raw=await gemini(req);let t=parseTurn(raw,list,m.host);
+    if(!t.ok){raw=await gemini(Object.assign({},req,{stream:false,onPartial:null}));t=parseTurn(raw,list,m.host);if(!t.ok)throw new GemError('Gemini 的回覆格式無法解析，請按「重試」。','parse')}
+    if(S.phase!=='run')return;
+    const turn={role:'ai',speaker:t.speaker,text:t.text,note:t.note,t:elapsed()};S.turns.push(turn);S.pending=null;S.busy=false;saveSession();renderChat();renderPanel();renderMic();
+    const ending=t.end||(S.wrap||0)>=4;
+    if(cfg.barge&&cfg.handsFree&&!ending)startRec('hands',true);
+    await speak(t.text,t.speaker);
+    if(S.phase!=='run')return;
+    if(ending){showRunAlert('ok','面試官已結束面試，正在產生評估報告…');await sleep(600);finishInterview();return}
+    if(cfg.handsFree&&!recOn&&!S.busy)startRec('hands')}
+  catch(e){S.pending=null;S.busy=false;renderChat();renderPanel();renderMic();if(e&&e.name==='AbortError')return;console.warn(e);
+    const msg=(e&&e.message)||String(e);
+    if(e.kind==='quota'&&!e.daily&&e.retry&&e.retry<=40&&!_auto){showRunAlert('warn',esc(msg)+` <b id="cd">${e.retry}</b> 秒後自動重試… <button class="btn sm" data-act="retryTurn">立即重試</button>`);
+      S.retryFn=()=>askNext(extra,true);let n=e.retry;clearInterval(S.cdT);S.cdT=setInterval(()=>{n--;const c=$('cd');if(c)c.textContent=n;if(n<=0){clearInterval(S.cdT);if(S.retryFn&&S.phase==='run'&&!S.busy){const f=S.retryFn;S.retryFn=null;f()}}},1000);return}
+    S.retryFn=()=>askNext(extra);showRunAlert(e.kind==='quota'?'warn':'err',esc(msg)+` <button class="btn sm" data-act="retryTurn">重試</button>`+(['key','nokey','model','perm'].includes(e.kind)?' <button class="btn sm" data-act="openSettings">開啟設定</button>':''))}}
+function finishInterview(){if(S.phase!=='run')return;stopRec();stopSpeaking();clearInterval(S.cdT);S.elapsedBase=elapsed();S.phase='report';S.ended=true;S.busy=false;stopTimer();saveSession();showView('report');renderReportView();generateReport()}
+async function generateReport(){const box=$('report');if(!S.turns.some(t=>t.role==='me')){$('repAlert').innerHTML=alertHtml('warn','這次還沒有作答內容，無法產生評估報告。你仍可下載逐字稿。');box.innerHTML='';return}
+  $('repAlert').innerHTML=alertHtml('info','⏳ 評估報告產生中…（約 10～60 秒）');box.innerHTML='';
+  try{const txt=await gemini({system:reportSystem(S.meta),contents:[{role:'user',parts:[{text:`以下是完整逐字稿（面試實際長度 ${fmtDur(S.elapsedBase)}）：\n\n${transcriptText(true)}\n\n請依規定結構產出評估報告。`}]}],stream:cfg.stream,thinking:'medium',temperature:0.6,
+      onPartial:s=>{box.innerHTML=md(s)}});
+    S.report=txt.replace(/^```(?:markdown|md)?\s*/i,'').replace(/\s*```\s*$/,'');box.innerHTML=md(S.report);$('repAlert').innerHTML='';saveSession()}
+  catch(e){console.warn(e);$('repAlert').innerHTML=alertHtml(e.kind==='quota'?'warn':'err',esc(e.message||String(e))+' <button class="btn sm" data-act="regenReport">重新產生</button>'+(['key','nokey','model'].includes(e.kind)?' <button class="btn sm" data-act="openSettings">開啟設定</button>':''))}}
+function buildMd(){const m=S.meta,d=new Date(m.date),ls=lenSpec(m.len);
+  const L=[`# 模擬面試紀錄｜${m.company||'未填公司'}${m.title?' '+m.title:''}`,'',
+    `- 日期：${d.getFullYear()}/${pad(d.getMonth()+1)}/${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`,
+    `- 模式：${m.mode==='stress'?'壓力面試':'一般面試'}；預定：${ls.type==='t'?'約 '+ls.val+' 分鐘':'約 '+ls.val+' 題'}；實際：${fmtDur(S.elapsedBase||elapsed())}`,
+    `- 面試官：${m.personas.map(p=>p.name).join('、')}`,`- 模型：${m.model}`,''];
+  if(m.jd)L.push('## 職缺內容','',m.jd,'');
+  L.push('## 逐字稿','');S.turns.forEach(t=>{if(t.role==='cmd'){L.push(`> （${t.text}）`,'');return}const who=t.role==='ai'?((m.personas.find(p=>p.id===t.speaker)||{}).name||t.speaker):'我';
+    L.push(`**${who}**（${fmtDur(t.t||0)}）：${t.text}`+(t.role==='ai'&&t.note?`  \n<sub>考察重點：${t.note}</sub>`:''),'')});
+  L.push('## 評估報告','',S.report||'（尚未產生）','','---','*由「語音模擬面試」產生，AI 評估僅供練習參考。*');return L.join('\n')}
+function downloadMd(){const m=S.meta,d=new Date(m.date);const name=`模擬面試_${nowStamp(d)}_${safeName(m.company||'未填公司')}.md`;
+  const b=new Blob([buildMd()],{type:'text/markdown;charset=utf-8'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500);toast('已下載 '+name)}
+function safeName(s){return String(s).replace(/[\\/:*?"<>|#%&{}$!'@+`=\s]+/g,'-').replace(/^-+|-+$/g,'').slice(0,40)||'未填公司'}
+async function saveGh(){const c=syncCfg();const al=$('repAlert');
+  if(!c){al.innerHTML=alertHtml('warn','找不到 GitHub 金鑰：請先到 <a href="index.html" target="_blank" rel="noopener">履歷組合器</a> 設定雲端同步（同一個網站會共用設定），再回來按一次。');return}
+  const d=new Date(S.meta.date);const base=`interviews/${nowStamp(d)}_${safeName(S.meta.company||'未填公司')}`;let path=S.savedPath||base+'.md';
+  if(!confirm(`要把這次的逐字稿與評估報告存到 GitHub 私有 repo 嗎？\n\nrepo：${c.owner}/${c.repo}（${c.branch||'main'}）\n檔案：${path}\n${S.savedPath?'（會更新先前存過的同一個檔案）':'（若已有同名檔案，會自動在檔名加上時間）'}`))return;
+  al.innerHTML=alertHtml('info','☁ 儲存中…');
+  try{let sha;const ex=await ghGet(c,path);
+    if(ex){if(S.savedPath)sha=ex.sha;else{path=`${base}_${pad(d.getHours())}${pad(d.getMinutes())}.md`;const ex2=await ghGet(c,path);if(ex2)path=`${base}_${Date.now().toString(36)}.md`}}
+    await ghPut(c,path,buildMd(),`模擬面試紀錄：${nowStamp(d)} ${S.meta.company||''}`.trim(),sha);S.savedPath=path;saveSession();
+    const url=`https://github.com/${c.owner}/${c.repo}/blob/${encodeURIComponent(c.branch||'main')}/${encPath(path)}`;
+    al.innerHTML=alertHtml('ok',`✅ 已存到 <a href="${esc(url)}" target="_blank" rel="noopener">${esc(c.owner+'/'+c.repo+'/'+path)}</a>`)}
+  catch(e){al.innerHTML=alertHtml('err','儲存失敗：'+esc(e.message))}}
+/* =================== 畫面 =================== */
+function avHTML(p,cls){return `<div class="av ${esc(p.shape||'circle')} ${cls||''}" style="--c:${esc(p.color||'#64748b')}">${esc(p.short||String(p.name||'?').slice(0,2))}</div>`}
+function showView(v){['Setup','Run','Report'].forEach(k=>$('v'+k).classList.toggle('hidden',k.toLowerCase()!==v));window.scrollTo(0,0)}
+function renderPanel(){if(!S.meta)return;const pend=S.busy&&S.pending;$('panel').innerHTML=S.meta.personas.map(p0=>{const p=Object.assign({},p0,personaById(p0.id)?{color:personaById(p0.id).color,shape:personaById(p0.id).shape,short:personaById(p0.id).short}:{});
+  const sp=S.speakingId===p.id,th=pend&&(S.pending.speaker===p.id||(!S.pending.speaker));
+  return `<div class="iv ${sp?'speaking':''} ${th?'thinking':''}" style="--c:${esc(p.color)}" data-pid="${esc(p.id)}">${avHTML(p)}<div><div class="nm">${esc(p.name)}</div><div class="tt">${esc(p.title||'')}${sp?'・說話中':th?'・思考中…':''}</div></div><div class="wave"><i></i><i></i><i></i></div></div>`}).join('')}
+function bubble(t,withNote){const m=S.meta;if(t.role==='cmd')return `<div class="msg sys"><div class="bub">（${esc(t.text)}）</div></div>`;
+  if(t.role==='me')return `<div class="msg me"><div><div class="who" style="text-align:right">我・${fmtDur(t.t||0)}</div><div class="bub">${esc(t.text)}</div></div></div>`;
+  const p=Object.assign({},m.personas.find(x=>x.id===t.speaker)||{name:t.speaker||'面試官'},personaById(t.speaker)?{color:personaById(t.speaker).color,shape:personaById(t.speaker).shape,short:personaById(t.speaker).short}:{});
+  return `<div class="msg ai" data-speaker="${esc(t.speaker)}">${avHTML(p)}<div><div class="who">${esc(p.name)}${t.t!=null?'・'+fmtDur(t.t):''}</div><div class="bub" style="border-left:3px solid ${esc(p.color||'#94a3b8')}">${esc(t.text)||'<span class="status">思考中…</span>'}</div>${withNote&&t.note?`<div class="note">📝 考察重點：${esc(t.note)}</div>`:''}</div></div>`}
+function renderChat(){const el=$('chat');let h=S.turns.map(t=>bubble(t,false)).join('');if(S.pending)h+=`<div id="pendingWrap">${bubble({role:'ai',speaker:S.pending.speaker,text:S.pending.text})}</div>`;el.innerHTML=h;el.scrollTop=el.scrollHeight}
+function updatePending(){const w=$('pendingWrap');if(!w){renderChat();return}w.innerHTML=bubble({role:'ai',speaker:S.pending.speaker,text:S.pending.text});$('chat').scrollTop=$('chat').scrollHeight;renderPanel()}
+function renderLive(){const el=$('live');if(!recOn&&!recFinal&&!recInterim){el.innerHTML='<span class="itm">（你的語音辨識文字會即時顯示在這裡）</span>';return}
+  el.innerHTML=esc(recFinal)+`<span class="itm">${esc(recInterim)}</span>`+(recOn&&!(recFinal+recInterim)?'<span class="itm">🎙 請開始說話…</span>':'')}
+function setMicStatus(t){$('micStatus').textContent=t}
+function renderMic(){const b=$('mic');if(!b)return;b.classList.toggle('rec',recOn);b.disabled=!SR||(S.busy&&!recOn);b.textContent=recOn?'⏺':'🎙';
+  setMicStatus(!SR?'不支援語音辨識':recOn?(recMode==='hands'?`聆聽中…停頓 ${cfg.silence} 秒自動送出`:recMode==='toggle'?'聆聽中…再點一下送出':'聆聽中…放開送出'):S.busy?'面試官思考中…':S.speakingId?'面試官說話中（點🎙可打斷）':'按住🎙或空白鍵說話');
+  $('rHands').checked=!!cfg.handsFree}
+let timerT=null;function startTimer(){stopTimer();timerT=setInterval(tick,1000);tick()}function stopTimer(){clearInterval(timerT);timerT=null}
+function tick(){if(!S.meta)return;const el=elapsed(),ls=lenSpec(S.meta.len),ans=S.turns.filter(t=>t.role==='me').length;$('timer').textContent=fmtDur(el);
+  let pct;if(ls.type==='t'){pct=el/(ls.val*60000);$('target').textContent=`／約 ${ls.val} 分鐘・${S.meta.mode==='stress'?'壓力':'一般'}面試`}else{pct=ans/(ls.val*2+1);$('target').textContent=`／約 ${ls.val} 題・已回答 ${ans} 次`}
+  $('progBar').style.width=Math.min(100,pct*100).toFixed(1)+'%';$('progBar').style.background=pct>=1?'var(--warn)':'var(--accent)'}
+function showRunAlert(kind,html){$('runAlert').innerHTML=alertHtml(kind,html)}function clearRunAlert(){$('runAlert').innerHTML=''}
+function renderReportView(){$('chat2').innerHTML=S.turns.map(t=>bubble(t,true)).join('');$('report').innerHTML=S.report?md(S.report):''}
+
+/* ---------- 設定區 ---------- */
+function renderTop(){const k=getKey();$('keyPill').textContent=k?'✓ Gemini 金鑰已設定':'未設定 Gemini 金鑰';$('keyPill').className='pill '+(k?'ok':'warn');$('modelPill').textContent=modelName()}
+function renderPartList(){$('partList').innerHTML=cfg.personas.map((p,i)=>`<label class="chk"><input type="checkbox" data-part="${i}" ${p.enabled?'checked':''}> <span class="av ${esc(p.shape||'circle')}" style="--c:${esc(p.color||'#64748b')};width:24px;height:24px;font-size:8px;display:inline-flex">${esc(p.short||'')}</span> ${esc(p.name)}${p.host?'（主持）':''}</label>`).join('')}
+function setupFromCfg(){$('fCompany').value=cfg.company||'';$('fTitle').value=cfg.title||'';$('fJD').value=cfg.jd||'';document.querySelectorAll('input[name=mode]').forEach(r=>r.checked=r.value===cfg.mode);
+  $('fLen').value=cfg.len;$('fHands').checked=!!cfg.handsFree;$('fSilence').value=cfg.silence;$('fTTS').checked=!!cfg.tts;$('fBarge').checked=!!cfg.barge;
+  document.querySelectorAll('input[name=bgsrc]').forEach(r=>r.checked=r.value===cfg.bgsrc);$('fFields').checked=!!cfg.withFields;$('fBg').value=lsGet(BG_KEY,'')||'';renderPartList();renderBgSrc()}
+function readSetup(){cfg.company=$('fCompany').value;cfg.title=$('fTitle').value;cfg.jd=$('fJD').value;cfg.mode=(document.querySelector('input[name=mode]:checked')||{}).value||'normal';cfg.len=$('fLen').value;
+  cfg.handsFree=$('fHands').checked;cfg.silence=Math.min(8,Math.max(1,+$('fSilence').value||2));cfg.tts=$('fTTS').checked;cfg.barge=$('fBarge').checked;
+  cfg.bgsrc=(document.querySelector('input[name=bgsrc]:checked')||{}).value||'github';cfg.withFields=$('fFields').checked;saveCfg()}
+function renderBgSrc(){const c=syncCfg();$('bgGh').innerHTML=cfg.bgsrc==='github'?(c?`將從 <b>${esc(c.owner)}/${esc(c.repo)}</b>（${esc(c.branch||'main')}）讀取 <code>${esc(c.path||'resume.json')}</code>，沿用履歷組合器儲存的 GitHub 金鑰。`:`⚠ 尚未在 <a href="index.html" target="_blank" rel="noopener">履歷組合器</a> 設定 GitHub 雲端同步，無法讀取雲端履歷；可改用其他來源或直接貼上。`)
+  :cfg.bgsrc==='local'?'讀取這個瀏覽器裡「履歷組合器」網頁版目前的資料（不需要 GitHub 金鑰）。':'直接在下面的文字框貼上履歷內容。'}
+let RES=null;
+async function loadResume(silent,keepText){readSetup();const info=$('bgInfo');
+  try{if(cfg.bgsrc==='manual'){$('fBg').focus();return}
+    if(cfg.bgsrc==='github'){const c=syncCfg();if(!c){if(!silent)info.innerHTML=alertHtml('warn','找不到 GitHub 設定，請先到履歷組合器設定雲端同步，或改用其他來源。');return}
+      info.textContent='⟳ 從 GitHub 載入中…';const f=await ghGet(c,c.path||'resume.json');if(!f)throw new Error('雲端找不到 '+(c.path||'resume.json'));RES=JSON.parse(f.text)}
+    else{RES=lsGet(LOCAL_RESUME_KEY,null);if(!RES||!Array.isArray(RES.cards)){if(!silent)info.innerHTML=alertHtml('warn','這個瀏覽器還沒有履歷組合器的資料，請先打開履歷組合器，或改用其他來源。');RES=null;return}}
+    if(!Array.isArray(RES.versions)||!RES.versions.length)throw new Error('履歷資料沒有任何版本');
+    const sel=$('fVer');sel.innerHTML=RES.versions.map(v=>`<option value="${esc(v.id)}">${esc(v.name||v.id)}${v.company?'｜'+esc(v.company):''}</option>`).join('');
+    const pick=RES.versions.find(v=>v.id===cfg.version)||RES.versions.find(v=>v.id==='v_full')||RES.versions.find(v=>v.name==='完整版')||RES.versions[0];sel.value=pick.id;if(keepText){cfg.version=pick.id;saveCfg();$('bgInfo').textContent='已載入履歷版本清單；下方是上次的背景文字（切換版本會重新產生）。'}else applyVersion()}
+  catch(e){info.innerHTML=alertHtml('err','載入失敗：'+esc(e.message))}}
+function applyVersion(){if(!RES)return;cfg.version=$('fVer').value;saveCfg();const t=resumeToText(RES,cfg.version,$('fFields').checked);$('fBg').value=t;lsSet(BG_KEY,t);
+  const v=RES.versions.find(x=>x.id===cfg.version)||{};$('bgInfo').textContent=`已載入「${v.name||cfg.version}」版本，共 ${t.length} 字（可直接修改）。`;
+  if(v.targetTitle&&!$('fTitle').value.trim()){$('fTitle').value=String(v.targetTitle).split(/[、,，]/)[0];readSetup()}}
+function renderLastSession(){const s=lsGet(SESS_KEY,null);const el=$('lastSession');if(!s||!s.meta||!(s.turns||[]).length){el.innerHTML='';return}
+  const d=new Date(s.meta.date);el.innerHTML=alertHtml('info',`上次的面試：${d.getMonth()+1}/${d.getDate()} ${pad(d.getHours())}:${pad(d.getMinutes())}・${esc(s.meta.company||'未填公司')}・${s.turns.length} 段對話${s.report?'・已有報告':''}
+    <div class="row" style="justify-content:center;margin-top:6px">${s.ended?`<button class="btn sm" data-act="openLast">📋 查看${s.report?'報告':'並產生報告'}</button>`:`<button class="btn sm" data-act="resumeLast">▶ 繼續上次面試</button>`}<button class="btn sm danger" data-act="dropLast">刪除這筆紀錄</button></div>`)}
+function restoreSession(s){S={phase:'setup',turns:s.turns||[],meta:s.meta,elapsedBase:s.elapsed||0,startAt:0,ended:!!s.ended,report:s.report||'',busy:false,wrap:0,savedPath:s.savedPath||''}}
+
+/* ---------- 設定對話框 ---------- */
+function openSettings(){const d=$('dlg');$('sKey').value=getKey();$('sKey').type='password';renderModelSel();$('sStream').checked=!!cfg.stream;
+  const c=syncCfg();$('ghInfo').innerHTML=c?`✓ 已偵測到履歷組合器的設定：<b>${esc(c.owner)}/${esc(c.repo)}</b>（${esc(c.branch||'main')}），金鑰 ••••${esc(String(c.token).slice(-4))}`:'⚠ 尚未偵測到 GitHub 設定（可不設定：仍可手動貼上履歷、下載 .md）。';
+  renderPersonaEditor();renderVoiceInfo();if(!d.open){if(d.showModal)d.showModal();else d.setAttribute('open','')}}
+function closeSettings(){const d=$('dlg');saveModelSel();if(d.close)d.close();else d.removeAttribute('open');renderTop();renderPartList();renderPanel()}
+function renderModelSel(){const sel=$('sModel');const extra=(cfg.extraModels||[]).filter(m=>!MODELS.some(x=>x[0]===m.id));
+  sel.innerHTML=MODELS.filter(x=>x[0]!=='__custom').map(([v,l])=>`<option value="${esc(v)}">${esc(l)}</option>`).join('')+(extra.length?`<optgroup label="你的金鑰可用的其他模型">${extra.map(m=>`<option value="${esc(m.id)}">${esc(m.id)}${m.label?'（'+esc(m.label)+'）':''}</option>`).join('')}</optgroup>`:'')+'<option value="__custom">自訂…</option>';
+  sel.value=cfg.model;if(sel.value!==cfg.model)sel.value='__custom';$('sModelCustom').value=cfg.model==='__custom'?cfg.customModel:(sel.value==='__custom'?cfg.model:'');$('sModelCustom').classList.toggle('hidden',sel.value!=='__custom')}
+function saveModelSel(){const v=$('sModel').value;if(v==='__custom'){cfg.model='__custom';cfg.customModel=$('sModelCustom').value.trim()}else cfg.model=v;cfg.stream=$('sStream').checked;saveCfg();renderTop()}
+function renderVoiceInfo(){const el=$('voiceInfo');if(!el)return;if(!hasTTS){el.innerHTML='⚠ 此瀏覽器不支援語音合成（面試官不會出聲，只顯示文字）。';return}
+  const z=zhVoices();el.innerHTML=z.length?`偵測到 ${z.length} 個中文語音：${z.slice(0,6).map(v=>esc(v.name)).join('、')}${z.length>6?'…':''}。未指定時會自動分配不同語音；只有一個語音時以音高／語速區分。`:'⚠ 沒有偵測到中文語音（可能還在載入）。Windows 可在「設定 → 時間與語言 → 語音」加裝「中文（台灣）」語音；Chrome 內建「Google 國語（臺灣）」。'}
+function voiceOptions(sel){const z=zhVoices(),zs=new Set(z.map(v=>v.voiceURI));const other=VOICES.filter(v=>!zs.has(v.voiceURI));
+  return `<option value="">自動（中文優先）</option>`+(z.length?`<optgroup label="中文">${z.map(v=>`<option value="${esc(v.voiceURI)}" ${v.voiceURI===sel?'selected':''}>${esc(v.name)}（${esc(v.lang)}）</option>`).join('')}</optgroup>`:'')+(other.length?`<optgroup label="其他語言">${other.map(v=>`<option value="${esc(v.voiceURI)}" ${v.voiceURI===sel?'selected':''}>${esc(v.name)}（${esc(v.lang)}）</option>`).join('')}</optgroup>`:'')}
+function renderPersonaEditor(){$('pList').innerHTML=cfg.personas.map((p,i)=>`<div class="pcard" style="--c:${esc(p.color)}">
+  <div class="row" style="justify-content:space-between">${avHTML(p)}<div style="flex:1"><b>${esc(p.name)}</b><div class="hint">id：${esc(p.id)}</div></div>
+    <label class="chk"><input type="checkbox" data-pk="enabled" data-pi="${i}" ${p.enabled?'checked':''}> 參與</label><label class="chk"><input type="radio" name="hostSel" data-pk="host" data-pi="${i}" ${p.host?'checked':''}> 主持人</label>
+    ${cfg.personas.length>1?`<button class="btn sm danger" data-act="delPersona" data-pi="${i}">刪除</button>`:''}</div>
+  <div class="grid3"><div><label class="f">名稱</label><input type="text" data-pk="name" data-pi="${i}" value="${esc(p.name)}"></div>
+    <div><label class="f">職稱／角色</label><input type="text" data-pk="title" data-pi="${i}" value="${esc(p.title||'')}"></div>
+    <div><label class="f">頭像文字・形狀・顏色</label><div class="row" style="flex-wrap:nowrap"><input type="text" data-pk="short" data-pi="${i}" value="${esc(p.short||'')}" maxlength="3" style="width:64px">
+      <select data-pk="shape" data-pi="${i}">${[['hex','六角'],['star','星形'],['clover','幸運草'],['circle','圓形'],['square','方形']].map(([v,l])=>`<option value="${v}" ${p.shape===v?'selected':''}>${l}</option>`).join('')}</select>
+      <input type="color" data-pk="color" data-pi="${i}" value="${esc(p.color||'#64748b')}" style="width:44px;height:34px;padding:2px"></div></div></div>
+  <label class="f">人設（給 Gemini 的角色說明：背景、評估重點、提問風格）</label><textarea data-pk="prompt" data-pi="${i}" rows="6">${esc(p.prompt||'')}</textarea>
+  <div class="grid3"><div><label class="f">聲音</label><select data-pk="voiceURI" data-pi="${i}">${voiceOptions(p.voiceURI)}</select></div>
+    <div><label class="f">語速 <span id="rv${i}">${(+p.rate).toFixed(2)}</span></label><input type="range" min="0.6" max="1.6" step="0.05" data-pk="rate" data-pi="${i}" value="${+p.rate||1}" style="width:100%"></div>
+    <div><label class="f">音高 <span id="pv${i}">${(+p.pitch).toFixed(2)}</span></label><div class="row" style="flex-wrap:nowrap"><input type="range" min="0" max="2" step="0.05" data-pk="pitch" data-pi="${i}" value="${p.pitch==null?1:+p.pitch}" style="flex:1"><button class="btn sm" data-act="testVoice" data-pi="${i}">▶ 試聽</button></div></div></div>
+</div>`).join('')}
+
+/* ---------- 事件 ---------- */
+const ACT={
+  openSettings,closeSettings,
+  toggleKey(){const k=$('sKey');k.type=k.type==='password'?'text':'password'},
+  saveKey(){const k=$('sKey').value.trim();if(!k){$('keyMsg').innerHTML=alertHtml('warn','請先貼上金鑰');return}try{localStorage.setItem(GKEY,k)}catch(e){}$('keyMsg').innerHTML=alertHtml('ok','✓ 已儲存在這個瀏覽器。建議按「測試」確認可用。');renderTop();renderStartWarn()},
+  clearKey(){if(!confirm('要從這個瀏覽器清除 Gemini 金鑰嗎？'))return;try{localStorage.removeItem(GKEY)}catch(e){}$('sKey').value='';$('keyMsg').innerHTML=alertHtml('info','已清除金鑰。');renderTop();renderStartWarn()},
+  async testKey(){ACT.saveKey();if(!getKey())return;saveModelSel();$('keyMsg').innerHTML=alertHtml('info','測試中…');
+    try{const t=await gemini({contents:[{role:'user',parts:[{text:'請只回覆兩個字：可以'}]}],thinking:/lite/.test(modelName())?'minimal':'low',temperature:0});$('keyMsg').innerHTML=alertHtml('ok',`✓ 金鑰可用（${esc(modelName())} 回覆：${esc(t.trim().slice(0,30))}）`)}
+    catch(e){$('keyMsg').innerHTML=alertHtml('err',esc(e.message))}},
+  async listModels(){const k=$('sKey').value.trim();if(k&&k!==getKey()){try{localStorage.setItem(GKEY,k)}catch(e){}renderTop()}$('keyMsg').innerHTML=alertHtml('info','讀取模型清單中…');
+    try{const ms=await listModels();cfg.extraModels=ms;saveCfg();renderModelSel();$('keyMsg').innerHTML=alertHtml('ok',`✓ 你的金鑰可使用 ${ms.length} 個文字模型：${esc(ms.map(m=>m.id).slice(0,12).join('、'))}${ms.length>12?'…':''}`)}
+    catch(e){$('keyMsg').innerHTML=alertHtml('err',esc(e.message))}},
+  addPersona(){cfg.personas.push({id:'p_'+Date.now().toString(36),name:'新面試官',title:'',short:'新',shape:'circle',color:'#f59e0b',host:false,enabled:true,rate:1,pitch:1,voiceURI:'',prompt:'（請描述這位面試官的背景、評估重點與提問風格）'});saveCfg();renderPersonaEditor();renderPartList()},
+  delPersona(el){const i=+el.dataset.pi;if(!confirm(`刪除「${cfg.personas[i].name}」？`))return;const was=cfg.personas[i].host;cfg.personas.splice(i,1);if(was&&cfg.personas[0])cfg.personas[0].host=true;saveCfg();renderPersonaEditor();renderPartList()},
+  resetPersonas(){if(!confirm('把所有面試官人設、聲音設定還原成預設？'))return;cfg.personas=clone(DEFAULT_PERSONAS);saveCfg();renderPersonaEditor();renderPartList()},
+  testVoice(el){const p=cfg.personas[+el.dataset.pi];speak(`你好，我是${p.name}，請先簡單自我介紹一下。`,p.id)},
+  loadResume(){loadResume(false)},
+  start(){startInterview()},
+  end(){if(S.turns.some(t=>t.role==='me')&&!confirm('確定要結束面試並產生評估報告嗎？'))return;finishInterview()},
+  sendText(){const t=$('txt').value.trim();if(!t)return;if(sendAnswer(t))$('txt').value='';else toast('面試官還在思考，請稍候再送出')},
+  replay(){const t=[...S.turns].reverse().find(x=>x.role==='ai');if(t){stopRec();speak(t.text,t.speaker)}},
+  stopTTS(){stopSpeaking()},
+  repeatQ(){if(!sendAnswer('不好意思，可以請您再說一次剛才的問題嗎？'))toast('請稍候…')},
+  skipQ(){if(S.busy||S.phase!=='run')return;stopSpeaking();stopRec();S.turns.push({role:'cmd',text:'應徵者希望換一題，請換一個主題或換另一位面試官提問',t:elapsed()});renderChat();askNext()},
+  retryTurn(){clearInterval(S.cdT);const f=S.retryFn;S.retryFn=null;clearRunAlert();if(f)f();else askNext()},
+  downloadMd,saveGh:()=>saveGh(),
+  regenReport(){generateReport()},
+  restart(){S={phase:'setup',turns:[],meta:null,elapsedBase:0,startAt:0,ended:false,report:'',busy:false,wrap:0,savedPath:''};showView('setup');renderLastSession()},
+  openLast(){const s=lsGet(SESS_KEY,null);if(!s)return;restoreSession(s);S.phase='report';showView('report');renderReportView();if(!S.report)generateReport()},
+  resumeLast(){const s=lsGet(SESS_KEY,null);if(!s)return;if(!getKey()){openSettings();return}restoreSession(s);S.phase='run';S.startAt=Date.now();showView('run');renderPanel();renderChat();startTimer();renderMic();
+    const last=S.turns[S.turns.length-1];if(!last||last.role!=='ai')askNext();else showRunAlert('info','已恢復上次的面試，請回答上一題（可按「🔁 重播上一句」）。')},
+  dropLast(){if(!confirm('刪除上次面試的逐字稿與報告（只刪這個瀏覽器裡的紀錄）？'))return;localStorage.removeItem(SESS_KEY);renderLastSession()}
+};
+function renderStartWarn(){const w=[];if(!getKey())w.push(alertHtml('warn','尚未設定 Gemini API 金鑰：請按右上角 <b>⚙ 設定</b>，依說明到 <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google AI Studio</a> 免費取得。'));$('startWarn').innerHTML=w.join('')}
+function startInterview(){readSetup();if(!getKey()){openSettings();$('keyMsg').innerHTML=alertHtml('warn','請先設定 Gemini API 金鑰才能開始面試。');return}
+  const list=activePersonas();if(!list.length){toast('請至少勾選一位面試官');return}
+  const bg=$('fBg').value.trim();lsSet(BG_KEY,bg);
+  S={phase:'run',turns:[],elapsedBase:0,startAt:Date.now(),ended:false,report:'',busy:false,wrap:0,savedPath:'',
+    meta:{date:new Date().toISOString(),company:cfg.company.trim(),title:cfg.title.trim(),jd:cfg.jd.trim(),mode:cfg.mode,len:cfg.len,personas:clone(list).map(p=>({id:p.id,name:p.name,title:p.title,short:p.short,shape:p.shape,color:p.color,host:p.host,prompt:p.prompt})),host:hostPersona(list).id,model:modelName(),bg}};
+  if(hasTTS){try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(' ');u.volume=0;speechSynthesis.speak(u)}catch(e){}} // 解鎖語音（需使用者手勢）
+  showView('run');renderPanel();renderChat();startTimer();renderMic();saveSession();askNext()}
+
+document.addEventListener('click',e=>{const el=e.target.closest('[data-act]');if(!el)return;const f=ACT[el.dataset.act];if(f){e.preventDefault();f(el)}});
+document.addEventListener('input',e=>{const t=e.target;
+  if(t.dataset.pk&&t.dataset.pi!=null){const p=cfg.personas[+t.dataset.pi];if(!p)return;const k=t.dataset.pk;
+    if(k==='enabled')p.enabled=t.checked;else if(k==='host'){cfg.personas.forEach(x=>x.host=false);p.host=true}else if(k==='rate'||k==='pitch'){p[k]=+t.value;const s=$((k==='rate'?'rv':'pv')+t.dataset.pi);if(s)s.textContent=(+t.value).toFixed(2)}else p[k]=t.value;
+    saveCfg();renderPartList();if(k!=='prompt'&&k!=='name'&&k!=='title'&&k!=='short'&&k!=='color')return;return}
+  if(t.dataset.part!=null){cfg.personas[+t.dataset.part].enabled=t.checked;saveCfg();return}
+  if(t.id==='fBg'){lsSet(BG_KEY,t.value);return}
+  if(['fCompany','fTitle','fJD','fLen','fHands','fSilence','fTTS','fBarge','fFields'].includes(t.id)||t.name==='mode'||t.name==='bgsrc'){readSetup();if(t.name==='bgsrc')renderBgSrc()}});
+document.addEventListener('change',e=>{const t=e.target;if(t.id==='fVer')applyVersion();else if(t.id==='fFields'&&RES)applyVersion();else if(t.id==='sModel'){$('sModelCustom').classList.toggle('hidden',t.value!=='__custom');saveModelSel()}else if(t.id==='sModelCustom'||t.id==='sStream')saveModelSel();
+  else if(t.id==='rHands'){cfg.handsFree=t.checked;$('fHands').checked=t.checked;saveCfg();if(t.checked&&S.phase==='run'&&!S.busy&&!recOn&&!S.speakingId)startRec('hands');else if(!t.checked&&recOn&&recMode==='hands')stopRec();renderMic()}
+  else if(t.dataset.pk==='shape'||t.dataset.pk==='voiceURI'||t.dataset.pk==='color'){renderPartList()}});
+const mic=$('mic');mic.addEventListener('pointerdown',e=>{e.preventDefault();micDown()});['pointerup','pointercancel'].forEach(ev=>mic.addEventListener(ev,e=>{e.preventDefault();micUp()}));mic.addEventListener('contextmenu',e=>e.preventDefault());
+document.addEventListener('keydown',e=>{if(S.phase!=='run')return;const tag=(e.target.tagName||'').toLowerCase();
+  if(e.target.id==='txt'&&e.key==='Enter'&&!e.shiftKey&&!e.isComposing){e.preventDefault();ACT.sendText();return}
+  if(e.code==='Space'&&!e.repeat&&!['input','textarea','select','button'].includes(tag)&&!$('dlg').open){e.preventDefault();micDown()}});
+document.addEventListener('keyup',e=>{if(S.phase!=='run')return;const tag=(e.target.tagName||'').toLowerCase();if(e.code==='Space'&&!['input','textarea','select','button'].includes(tag)){e.preventDefault();micUp()}});
+$('txt').addEventListener('focus',()=>{stopSpeaking()});
+window.addEventListener('beforeunload',e=>{if(S.phase==='run'&&S.turns.length){saveSession();e.preventDefault();e.returnValue=''}});
+
+/* ---------- 初始化 ---------- */
+(function init(){if(location.protocol==='file:')$('backLink').href='https://casioesh311.github.io/resume-builder/';
+  const al=[];if(!SR)al.push(alertHtml('warn','⚠ 這個瀏覽器不支援語音辨識（Web Speech API）。建議使用<b>電腦版 Chrome 或 Edge</b>；仍可用鍵盤打字作答。'));
+  if(!hasTTS)al.push(alertHtml('warn','⚠ 這個瀏覽器不支援語音合成，面試官只會顯示文字。'));
+  if(!window.isSecureContext)al.push(alertHtml('warn','⚠ 目前不是 HTTPS 網址，麥克風可能無法使用。請從 https://casioesh311.github.io/resume-builder/interview.html 開啟。'));
+  $('globalAlerts').innerHTML=al.join('');
+  if(hasTTS){loadVoices();try{speechSynthesis.addEventListener('voiceschanged',loadVoices)}catch(e){speechSynthesis.onvoiceschanged=loadVoices}}
+  setupFromCfg();renderTop();renderStartWarn();renderLastSession();
+  if(cfg.bgsrc!=='manual')loadResume(true,!!$('fBg').value.trim());
+})();
+</script>
+</body>
+</html>
